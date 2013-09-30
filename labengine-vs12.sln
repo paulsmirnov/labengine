@@ -1,7 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "labengine", "labengine-vs12.vcxproj", "{9D640781-836B-4801-9932-2428577A080E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "labengine-vs12", "labengine-vs12.vcxproj", "{9D640781-836B-4801-9932-2428577A080E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "labtest-vs12", "labtest-vs12.vcxproj", "{49C427B0-BD70-4F3E-8488-D5758C6DD7E6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9D640781-836B-4801-9932-2428577A080E} = {9D640781-836B-4801-9932-2428577A080E}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,6 +18,10 @@ Global
 		{9D640781-836B-4801-9932-2428577A080E}.Debug|Win32.Build.0 = Debug|Win32
 		{9D640781-836B-4801-9932-2428577A080E}.Release|Win32.ActiveCfg = Release|Win32
 		{9D640781-836B-4801-9932-2428577A080E}.Release|Win32.Build.0 = Release|Win32
+		{49C427B0-BD70-4F3E-8488-D5758C6DD7E6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{49C427B0-BD70-4F3E-8488-D5758C6DD7E6}.Debug|Win32.Build.0 = Debug|Win32
+		{49C427B0-BD70-4F3E-8488-D5758C6DD7E6}.Release|Win32.ActiveCfg = Release|Win32
+		{49C427B0-BD70-4F3E-8488-D5758C6DD7E6}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
