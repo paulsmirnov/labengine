@@ -2,3 +2,4 @@ bin/
 obj/
 *.sdf
 *.suo
+*.opensdf
