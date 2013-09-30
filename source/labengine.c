@@ -10,13 +10,16 @@ typedef struct lab_globals
   HANDLE thread;
   HANDLE syncEvent;
   HWND hwnd;
+  boolean_t quit;
 } lab_globals;
 
 static lab_globals s_globals = {
   LAB_FALSE,    // init
   ~0,           // threadId
-  NULL,         // threadHandle
+  NULL,         // thread
+  NULL,         // syncEvent
   NULL,         // hwnd
+  LAB_FALSE,    // quit
 };
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -25,7 +28,8 @@ static lab_globals s_globals = {
 
 static LRESULT _onClose(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
-  DestroyWindow(hwnd);
+  if (s_globals.quit)
+    DestroyWindow(hwnd);
   return 0;
 }
 
@@ -207,6 +211,8 @@ void LabTerm(void)
 {
   if (!s_globals.init)
     return;
+
+  s_globals.quit = LAB_TRUE;
 
   // request the thread to terminate by closing the window
   _ASSERT(s_globals.hwnd != NULL);
