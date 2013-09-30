@@ -11,7 +11,8 @@ int main(void)
   }
 
   // do the job
-  printf("... here I do something...\nOK.\n");
+  printf("... here I do something...\nOK, press ENTER\n");
+  getchar();
 
   // terminate
   LabTerm();
