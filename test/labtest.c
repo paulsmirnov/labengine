@@ -10,10 +10,10 @@ int main(void)
     return -1;
   }
 
+  printf("Width is %i, height is %i\n", LabGetMaxX(), LabGetMaxY());
   // do the job
   printf("... here I do something...\nOK, press ENTER\n");
   getchar();
-
   // terminate
   LabTerm();
   return 0;

@@ -11,6 +11,8 @@ typedef struct lab_globals
   HANDLE syncEvent;
   HWND hwnd;
   boolean_t quit;
+  LONG width; //initialization in LabInit()
+  LONG height;
 } lab_globals;
 
 static lab_globals s_globals = {
@@ -49,7 +51,7 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
   {
     // todo: remove this test line [9/30/2013 paul.smirnov]
     MoveToEx(hdc, 0, 0, NULL);
-    LineTo(hdc, 640, 480);
+    LineTo(hdc, s_globals.width, s_globals.height);
 
     EndPaint(hwnd, &ps);
   }
@@ -91,13 +93,13 @@ static HWND _labCreateWindow(void)
   static LPCTSTR MY_WINDOW_NAME = TEXT("Lab Graphics");
   WNDCLASSEX wcex;
   HWND hwnd = NULL;
-  RECT rc = {0, 0, 640, 480};
-  DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+  RECT rc = {0, 0, s_globals.width, s_globals.height};
+  DWORD style = (WS_OVERLAPPEDWINDOW  & ~WS_THICKFRAME  & ~WS_MAXIMIZEBOX) | WS_VISIBLE; /*disable maximize and sising button*/
   HINSTANCE hInstance = GetModuleHandle(0);
 
   // Register class
   wcex.cbSize = sizeof(WNDCLASSEX);
-  wcex.style = CS_HREDRAW | CS_VREDRAW;
+  wcex.style = CS_HREDRAW | CS_VREDRAW | CS_NOCLOSE; /*disable [X]*/
   wcex.lpfnWndProc = _labWindowProc;
   wcex.cbClsExtra = 0;
   wcex.cbWndExtra = 0;
@@ -179,6 +181,9 @@ static void _labThreadCleanup(void)
 
 boolean_t LabInit(void)
 {
+  s_globals.width = 640;
+  s_globals.height = 480;
+  
   // do not initialize twice
   if (s_globals.init)
     return LAB_FALSE;
@@ -226,5 +231,17 @@ void LabTerm(void)
   _labThreadCleanup();
   s_globals.init = LAB_FALSE;
 }
+
+//get width and height of the window
+int LabGetMaxX(void)
+{
+  return s_globals.width;
+}
+
+int LabGetMaxY(void)
+{
+  return s_globals.height;
+}
+
 
 // End of file
