@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <crtdbg.h>
 #include <stdio.h>
+#include <strsafe.h>
 
 typedef struct lab_globals
 {
@@ -28,6 +29,42 @@ static lab_globals s_globals = {
 };
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//   Error report
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef _DEBUG
+
+void _labReportError()
+{
+    LPVOID lpMsgBuf;
+    LPVOID lpDisplayBuf;
+    DWORD dw = GetLastError(); 
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        dw,
+        MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL );
+
+    // Display the error message and exit the process
+    if (dw != 0)
+    {
+      lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, (lstrlen((LPCTSTR)lpMsgBuf) + 40) * sizeof(TCHAR)); 
+      StringCchPrintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR), TEXT("Failed with error %d: %s"), dw, lpMsgBuf); 
+      OutputDebugString((LPTSTR) lpDisplayBuf);
+      // MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
+      LocalFree(lpDisplayBuf); 
+    }
+    LocalFree(lpMsgBuf);
+}
+
+#endif
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Message handlers
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -51,6 +88,7 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
 {
   PAINTSTRUCT ps;
   HDC hdc;
+  DWORD res;
   RECT rect = {0, 0, s_globals.width, s_globals.height};
   hdc = BeginPaint(hwnd, &ps);
   if (hdc)
@@ -61,7 +99,9 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
     // todo: remove this test line [9/30/2013 paul.smirnov]
     MoveToEx(s_globals.hbmdc, 0, 0, NULL);
     LineTo(s_globals.hbmdc, s_globals.width, s_globals.height);
-    BitBlt(hdc, 0, 0, s_globals.width, s_globals.height, s_globals.hbmdc, 0, 0, SRCCOPY);
+    res = BitBlt(hdc, 0, 0, s_globals.width, s_globals.height, s_globals.hbmdc, 0, 0, SRCCOPY);
+    if (!res)
+      _labReportError();
   }
   EndPaint(hwnd, &ps);
   return 0;
@@ -119,13 +159,17 @@ static HWND _labCreateWindow(void)
   wcex.lpszClassName = MY_CLASS_NAME;
   wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
   if (!RegisterClassEx(&wcex))
+  {
+    _labReportError();
     return NULL;
+  }
     
-  // Create window
+  // create window
   AdjustWindowRect(&rc, style, FALSE);
   hwnd = CreateWindow(MY_CLASS_NAME, MY_WINDOW_NAME, style,
     CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, hInstance, NULL);
-
+  if (hwnd == NULL)
+    _labReportError();
   return hwnd;
 }
 
@@ -135,24 +179,37 @@ static HWND _labCreateWindow(void)
 
 static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
 {
+  HDC hdc;
+  
   // create window
   s_globals.hwnd = _labCreateWindow();
+  if (s_globals.hwnd == NULL)
+    _labReportError();
 
-  // ñreate second frame buffer
-  if (s_globals.hwnd)
+  // create second frame buffer
+  hdc = GetDC(s_globals.hwnd);
+  s_globals.hbmdc = CreateCompatibleDC(hdc);
+  if (!s_globals.hbmdc)
   {
-     HDC hdc = GetDC(s_globals.hwnd);
-     s_globals.hbmdc = CreateCompatibleDC(hdc);
-     s_globals.hbm = CreateCompatibleBitmap(hdc, s_globals.width, s_globals.height);
-     //s_globals.hbm = CreateCompatibleBitmap(hdc, 100, 100);
-     SelectObject(s_globals.hbmdc, s_globals.hbm);
-     ReleaseDC(s_globals.hwnd, hdc);
+    SetLastError(ERROR_INVALID_HANDLE);
+    _labReportError();
   }
+  s_globals.hbm = CreateCompatibleBitmap(hdc, s_globals.width, s_globals.height);
+  if (!s_globals.hbm)
+  {
+    SetLastError(ERROR_INVALID_HANDLE);
+    _labReportError();
+  }
+  SelectObject(s_globals.hbmdc, s_globals.hbm);
+  ReleaseDC(s_globals.hwnd, hdc);
 
   // synchronize with the main thread
   SetEvent(s_globals.syncEvent);
   if (!s_globals.hwnd)
+  {
+    _labReportError();
     return 1;
+  }
 
   // message loop
   {
@@ -167,7 +224,8 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
       }
       else
       {
-        // todo: process error [9/30/2013 paul.smirnov]
+        _labReportError();
+        break;
       }
     }
   }
@@ -176,6 +234,8 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
   return 0;
 }
 
+
+
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Initialization and termination routines
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -183,10 +243,13 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
 
 static void _labThreadCleanup(void)
 {
+  DWORD res;
   if (s_globals.thread != NULL)
   {
     // destroy the thread
-    CloseHandle(s_globals.thread);
+    res = CloseHandle(s_globals.thread);
+    if (!res)
+      _labReportError();
     s_globals.thread = NULL;
     s_globals.threadId = ~0;
   }
@@ -194,7 +257,9 @@ static void _labThreadCleanup(void)
   // destroy the synchronization object
   if (s_globals.syncEvent)
   {
-    CloseHandle(s_globals.syncEvent);
+    res = CloseHandle(s_globals.syncEvent);
+    if (!res)
+      _labReportError();
     s_globals.syncEvent = NULL;
   }
 }
@@ -202,6 +267,8 @@ static void _labThreadCleanup(void)
 boolean_t LabInit(void)
 {
   HDC hdc;
+  DWORD res;
+  LPTHREAD_START_ROUTINE lpStartAddress = NULL;
 
   // do not initialize twice
   if (s_globals.init)
@@ -209,33 +276,41 @@ boolean_t LabInit(void)
 
   s_globals.width = 640;
   s_globals.height = 480;
-
+  
   // create synchronization object
   s_globals.syncEvent = CreateEvent(NULL, FALSE, FALSE, TEXT("LabSyncEvent"));
   if (!s_globals.syncEvent)
     goto on_error;
 
   // create thread for message processing and run it
-  s_globals.thread = CreateThread(NULL, 0, _labThreadProc, NULL, 0, &s_globals.threadId);
+  if (_labThreadProc == NULL)
+  {
+    SetLastError(ERROR_INVALID_HANDLE);
+    goto on_error;
+  }
+  s_globals.thread = CreateThread(NULL, 0, _labThreadProc , NULL, 0, &s_globals.threadId);
   if (!s_globals.thread)
     goto on_error;
 
   // wait until the window is created in another thread
-  WaitForSingleObject(s_globals.syncEvent, INFINITE);
-  if (!s_globals.hwnd)
+  res = WaitForSingleObject(s_globals.syncEvent, INFINITE);
+  if ((!s_globals.hwnd) || (res == WAIT_FAILED))
     goto on_error;
- 
+
   // success
   s_globals.init = LAB_TRUE;
   return LAB_TRUE;
 
 on_error:
   _labThreadCleanup();
+  _labReportError();
   return LAB_FALSE;
 }
 
 void LabTerm(void)
 {
+  DWORD res;
+
   if (!s_globals.init)
     return;
 
@@ -247,8 +322,9 @@ void LabTerm(void)
 
   // wait for the thread to finish
   _ASSERT(s_globals.thread);
-  WaitForSingleObject(s_globals.thread, INFINITE); // todo: get rid of INFINITE [9/30/2013 paul.smirnov]
-
+  res = WaitForSingleObject(s_globals.thread, INFINITE); // todo: get rid of INFINITE [9/30/2013 paul.smirnov]
+  if (res == WAIT_FAILED)
+    _labReportError();
   // done
   _labThreadCleanup();
   s_globals.init = LAB_FALSE;
