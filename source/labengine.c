@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <crtdbg.h>
+#include <stdio.h>
 
 typedef struct lab_globals
 {
@@ -13,6 +14,8 @@ typedef struct lab_globals
   boolean_t quit;
   LONG width; //initialization in LabInit()
   LONG height;
+  HBITMAP hbm;
+  HDC hbmdc;
 } lab_globals;
 
 static lab_globals s_globals = {
@@ -31,7 +34,10 @@ static lab_globals s_globals = {
 static LRESULT _onClose(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
   if (s_globals.quit)
+  {
     DestroyWindow(hwnd);
+    DeleteObject(s_globals.hbmdc);
+  }
   return 0;
 }
 
@@ -45,17 +51,19 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
 {
   PAINTSTRUCT ps;
   HDC hdc;
-
+  RECT rect = {0, 0, s_globals.width, s_globals.height};
   hdc = BeginPaint(hwnd, &ps);
   if (hdc)
   {
+    SelectObject(s_globals.hbmdc, GetStockObject(BLACK_PEN));
+    SelectObject(s_globals.hbmdc, GetStockObject(HOLLOW_BRUSH));
+    FillRect(s_globals.hbmdc, &rect, (HBRUSH) (HOLLOW_BRUSH));
     // todo: remove this test line [9/30/2013 paul.smirnov]
-    MoveToEx(hdc, 0, 0, NULL);
-    LineTo(hdc, s_globals.width, s_globals.height);
-
-    EndPaint(hwnd, &ps);
+    MoveToEx(s_globals.hbmdc, 0, 0, NULL);
+    LineTo(s_globals.hbmdc, s_globals.width, s_globals.height);
+    BitBlt(hdc, 0, 0, s_globals.width, s_globals.height, s_globals.hbmdc, 0, 0, SRCCOPY);
   }
-
+  EndPaint(hwnd, &ps);
   return 0;
 }
 
@@ -161,6 +169,7 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
 //   Initialization and termination routines
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 static void _labThreadCleanup(void)
 {
   if (s_globals.thread != NULL)
@@ -181,6 +190,8 @@ static void _labThreadCleanup(void)
 
 boolean_t LabInit(void)
 {
+  HDC hdc;
+
   s_globals.width = 640;
   s_globals.height = 480;
   
@@ -202,6 +213,14 @@ boolean_t LabInit(void)
   WaitForSingleObject(s_globals.syncEvent, INFINITE);
   if (!s_globals.hwnd)
     goto on_error;
+ 
+  // ñreate second frame buffer
+  hdc = GetDC(s_globals.hwnd);
+  s_globals.hbmdc = CreateCompatibleDC(hdc);
+  //s_globals.hbm = CreateCompatibleBitmap(hdc, s_globals.width, s_globals.height);
+  s_globals.hbm = CreateCompatibleBitmap(hdc, 100, 100);
+  SelectObject(s_globals.hbmdc, s_globals.hbm);
+  ReleaseDC(s_globals.hwnd, hdc);
 
   // success
   s_globals.init = LAB_TRUE;
@@ -233,12 +252,12 @@ void LabTerm(void)
 }
 
 //get width and height of the window
-int LabGetMaxX(void)
+int LabGetWidth(void)
 {
   return s_globals.width;
 }
 
-int LabGetMaxY(void)
+int LabGetHeight(void)
 {
   return s_globals.height;
 }

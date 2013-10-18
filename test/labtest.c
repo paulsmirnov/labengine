@@ -10,7 +10,7 @@ int main(void)
     return -1;
   }
 
-  printf("Width is %i, height is %i\n", LabGetMaxX(), LabGetMaxY()); //window sizes
+  printf("Width is %i, height is %i\n", LabGetWidth(), LabGetHeight()); //window sizes
 
   // do the job
   printf("... here I do something...\nOK, press ENTER\n");
