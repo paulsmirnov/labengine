@@ -137,7 +137,18 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
 {
   // create window
   s_globals.hwnd = _labCreateWindow();
-  
+
+  // ñreate second frame buffer
+  if (s_globals.hwnd)
+  {
+     HDC hdc = GetDC(s_globals.hwnd);
+     s_globals.hbmdc = CreateCompatibleDC(hdc);
+     s_globals.hbm = CreateCompatibleBitmap(hdc, s_globals.width, s_globals.height);
+     //s_globals.hbm = CreateCompatibleBitmap(hdc, 100, 100);
+     SelectObject(s_globals.hbmdc, s_globals.hbm);
+     ReleaseDC(s_globals.hwnd, hdc);
+  }
+
   // synchronize with the main thread
   SetEvent(s_globals.syncEvent);
   if (!s_globals.hwnd)
@@ -192,12 +203,12 @@ boolean_t LabInit(void)
 {
   HDC hdc;
 
-  s_globals.width = 640;
-  s_globals.height = 480;
-  
   // do not initialize twice
   if (s_globals.init)
     return LAB_FALSE;
+
+  s_globals.width = 640;
+  s_globals.height = 480;
 
   // create synchronization object
   s_globals.syncEvent = CreateEvent(NULL, FALSE, FALSE, TEXT("LabSyncEvent"));
@@ -214,14 +225,6 @@ boolean_t LabInit(void)
   if (!s_globals.hwnd)
     goto on_error;
  
-  // ñreate second frame buffer
-  hdc = GetDC(s_globals.hwnd);
-  s_globals.hbmdc = CreateCompatibleDC(hdc);
-  //s_globals.hbm = CreateCompatibleBitmap(hdc, s_globals.width, s_globals.height);
-  s_globals.hbm = CreateCompatibleBitmap(hdc, 100, 100);
-  SelectObject(s_globals.hbmdc, s_globals.hbm);
-  ReleaseDC(s_globals.hwnd, hdc);
-
   // success
   s_globals.init = LAB_TRUE;
   return LAB_TRUE;
