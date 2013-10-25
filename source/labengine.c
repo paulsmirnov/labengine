@@ -93,18 +93,23 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
   hdc = BeginPaint(hwnd, &ps);
   if (hdc)
   {
-    SelectObject(s_globals.hbmdc, GetStockObject(BLACK_PEN));
-    SelectObject(s_globals.hbmdc, GetStockObject(HOLLOW_BRUSH));
-    FillRect(s_globals.hbmdc, &rect, (HBRUSH) (HOLLOW_BRUSH));
-    // todo: remove this test line [9/30/2013 paul.smirnov]
-    MoveToEx(s_globals.hbmdc, 0, 0, NULL);
-    LineTo(s_globals.hbmdc, s_globals.width, s_globals.height);
     res = BitBlt(hdc, 0, 0, s_globals.width, s_globals.height, s_globals.hbmdc, 0, 0, SRCCOPY);
     if (!res)
       _labReportError();
   }
   EndPaint(hwnd, &ps);
   return 0;
+}
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//   Graphics
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void LabDrawLine(int x1, int y1,  int x2, int y2)
+{
+   MoveToEx(s_globals.hbmdc, x1, y1, NULL);
+   LineTo(s_globals.hbmdc, x2, y2);
+   InvalidateRect(s_globals.hwnd, NULL, FALSE);
 }
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +185,8 @@ static HWND _labCreateWindow(void)
 static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
 {
   HDC hdc;
-  
+  RECT rect = {0, 0, s_globals.width, s_globals.height};
+
   // create window
   s_globals.hwnd = _labCreateWindow();
   if (s_globals.hwnd == NULL)
@@ -202,6 +208,12 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
   }
   SelectObject(s_globals.hbmdc, s_globals.hbm);
   ReleaseDC(s_globals.hwnd, hdc);
+
+  //initialize pen and background colors
+  SelectObject(s_globals.hbmdc, GetStockObject(BLACK_PEN));
+  SelectObject(s_globals.hbmdc, GetStockObject(HOLLOW_BRUSH));
+  FillRect(s_globals.hbmdc, &rect, (HBRUSH) (HOLLOW_BRUSH));
+  InvalidateRect(s_globals.hwnd, NULL, TRUE);
 
   // synchronize with the main thread
   SetEvent(s_globals.syncEvent);

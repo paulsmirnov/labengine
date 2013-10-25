@@ -11,5 +11,6 @@ boolean_t LabInit(void);
 void LabTerm(void);
 int LabGetWidth(void);
 int LabGetHeight(void);
+void LabDrawLine(int x1, int y1, int x2, int y2);
 
 #endif // LABENGINE_H_INCLUDED
