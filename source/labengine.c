@@ -13,10 +13,12 @@ typedef struct lab_globals
   HANDLE syncEvent;
   HWND hwnd;
   boolean_t quit;
-  LONG width; //initialization in LabInit()
+  LONG width; // initialization in LabInit()
   LONG height;
   HBITMAP hbm;
   HDC hbmdc;
+  HRGN hrgn;
+  RECT * lprect;
 } lab_globals;
 
 static lab_globals s_globals = {
@@ -74,6 +76,8 @@ static LRESULT _onClose(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
   {
     DestroyWindow(hwnd);
     DeleteObject(s_globals.hbmdc);
+    if (s_globals.lprect != NULL)
+      free(s_globals.lprect);
   }
   return 0;
 }
@@ -89,11 +93,10 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
   PAINTSTRUCT ps;
   HDC hdc;
   DWORD res;
-  RECT rect = {0, 0, s_globals.width, s_globals.height};
   hdc = BeginPaint(hwnd, &ps);
   if (hdc)
   {
-    res = BitBlt(hdc, 0, 0, s_globals.width, s_globals.height, s_globals.hbmdc, 0, 0, SRCCOPY);
+    res = BitBlt(hdc, s_globals.lprect->left, s_globals.lprect->top, s_globals.lprect->right, s_globals.lprect->bottom, s_globals.hbmdc, 0, 0, SRCCOPY);
     if (!res)
       _labReportError();
   }
@@ -105,11 +108,21 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
 //   Graphics
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void _labFillCoord(int x1, int y1, int x2, int y2)
+{
+   s_globals.lprect->left = x1;
+   s_globals.lprect->top = y1;
+   s_globals.lprect->right = x2;
+   s_globals.lprect->bottom = y2;
+}
+
 void LabDrawLine(int x1, int y1,  int x2, int y2)
 {
+   // define region to redraw
+   _labFillCoord(x1, y1, x2, y2);
    MoveToEx(s_globals.hbmdc, x1, y1, NULL);
    LineTo(s_globals.hbmdc, x2, y2);
-   InvalidateRect(s_globals.hwnd, NULL, FALSE);
+   InvalidateRect(s_globals.hwnd, s_globals.lprect, FALSE);
 }
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -209,11 +222,14 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
   SelectObject(s_globals.hbmdc, s_globals.hbm);
   ReleaseDC(s_globals.hwnd, hdc);
 
-  //initialize pen and background colors
+  // initialize pen and background colors
   SelectObject(s_globals.hbmdc, GetStockObject(BLACK_PEN));
   SelectObject(s_globals.hbmdc, GetStockObject(HOLLOW_BRUSH));
   FillRect(s_globals.hbmdc, &rect, (HBRUSH) (HOLLOW_BRUSH));
   InvalidateRect(s_globals.hwnd, NULL, TRUE);
+   
+  // coordinates of rectangle to be redrawn
+  s_globals.lprect = (RECT *)malloc(sizeof(RECT));
 
   // synchronize with the main thread
   SetEvent(s_globals.syncEvent);

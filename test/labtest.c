@@ -10,7 +10,7 @@ int main(void)
     return -1;
   }
 
-  printf("Width is %i, height is %i\n", LabGetWidth(), LabGetHeight()); //window sizes
+  printf("Width is %i, height is %i\n", LabGetWidth(), LabGetHeight()); // window sizes
   LabDrawLine(100, 200, 500, 200);
   LabDrawLine(0, 0, LabGetWidth(), LabGetHeight());
   // do the job
