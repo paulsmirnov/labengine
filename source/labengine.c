@@ -5,6 +5,10 @@
 #include <stdio.h>
 #include <strsafe.h>
 
+#ifdef _DEBUG 
+#define LAB_ENABLE_REPORT
+#endif
+
 typedef struct lab_globals
 {
   boolean_t init;
@@ -34,37 +38,37 @@ static lab_globals s_globals = {
 //   Error report
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef _DEBUG
-
 void _labReportError()
 {
-    LPVOID lpMsgBuf;
-    LPVOID lpDisplayBuf;
-    DWORD dw = GetLastError(); 
+  #ifdef LAB_ENABLE_REPORT
 
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        dw,
-        MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-        (LPTSTR) &lpMsgBuf,
-        0, NULL );
+  LPVOID lpMsgBuf;
+  LPVOID lpDisplayBuf;
+  DWORD dw = GetLastError(); 
 
-    // Display the error message and exit the process
-    if (dw != 0)
-    {
-      lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, (lstrlen((LPCTSTR)lpMsgBuf) + 40) * sizeof(TCHAR)); 
-      StringCchPrintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR), TEXT("Failed with error %d: %s"), dw, lpMsgBuf); 
-      OutputDebugString((LPTSTR) lpDisplayBuf);
-      // MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
-      LocalFree(lpDisplayBuf); 
-    }
-    LocalFree(lpMsgBuf);
+  FormatMessage(
+      FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+      FORMAT_MESSAGE_FROM_SYSTEM |
+      FORMAT_MESSAGE_IGNORE_INSERTS,
+      NULL,
+      dw,
+      MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
+      (LPTSTR) &lpMsgBuf,
+      0, NULL );
+
+  // Display the error message and exit the process
+  if (dw != 0)
+  {
+    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, (lstrlen((LPCTSTR)lpMsgBuf) + 40) * sizeof(TCHAR)); 
+    StringCchPrintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR), TEXT("Failed with error %d: %s"), dw, lpMsgBuf); 
+    OutputDebugString((LPTSTR) lpDisplayBuf);
+    // MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
+    LocalFree(lpDisplayBuf); 
+  }
+  LocalFree(lpMsgBuf);
+
+#endif LAB_ENABLE_REPORT
 }
-
-#endif
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Message handlers
@@ -294,7 +298,6 @@ static void _labThreadCleanup(void)
 
 boolean_t LabInit(void)
 {
-  HDC hdc;
   DWORD res;
   LPTHREAD_START_ROUTINE lpStartAddress = NULL;
 
