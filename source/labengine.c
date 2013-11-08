@@ -22,6 +22,7 @@ typedef struct lab_globals
   HBITMAP hbm;
   HDC hbmdc;
   HRGN hrgn;
+  CRITICAL_SECTION cs;
 } lab_globals;
 
 static lab_globals s_globals = {
@@ -79,6 +80,7 @@ static LRESULT _onClose(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
   {
     DestroyWindow(hwnd);
     DeleteObject(s_globals.hbmdc);
+    DeleteCriticalSection(&s_globals.cs);
   }
   return 0;
 }
@@ -97,9 +99,14 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
   hdc = BeginPaint(hwnd, &ps);
   if (hdc)
   {
-    res = BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom, s_globals.hbmdc, 0, 0, SRCCOPY);
-    if (!res)
-      _labReportError();
+    if (TryEnterCriticalSection(&s_globals.cs))
+    {
+    //  LabDrawLine(1, 40, 200, 400);
+      res = BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom, s_globals.hbmdc, 0, 0, SRCCOPY);
+      if (!res)
+        _labReportError();
+      LeaveCriticalSection(&s_globals.cs);
+    }
   }
   EndPaint(hwnd, &ps);
   return 0;
@@ -112,14 +119,18 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
 void LabDrawLine(int x1, int y1,  int x2, int y2)
 {
   RECT r;
+ // define region to redraw
   r.left = x1;
   r.right = x2;
   r.top = y1;
   r.bottom = y2;
-  // define region to redraw
-  MoveToEx(s_globals.hbmdc, x1, y1, NULL);
-  LineTo(s_globals.hbmdc, x2, y2);
-  InvalidateRect(s_globals.hwnd, &r, FALSE);
+  if (TryEnterCriticalSection(&s_globals.cs))
+  {
+    MoveToEx(s_globals.hbmdc, x1, y1, NULL);
+    LineTo(s_globals.hbmdc, x2, y2);
+    InvalidateRect(s_globals.hwnd, &r, FALSE);
+    LeaveCriticalSection(&s_globals.cs);
+  }
 }
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -218,6 +229,8 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
   }
   SelectObject(s_globals.hbmdc, s_globals.hbm);
   ReleaseDC(s_globals.hwnd, hdc);
+
+  InitializeCriticalSection(&s_globals.cs);
 
   // initialize pen and background colors
   SelectObject(s_globals.hbmdc, GetStockObject(BLACK_PEN));
