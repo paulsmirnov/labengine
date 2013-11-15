@@ -3,8 +3,8 @@
 
 typedef enum boolean_t
 {
-  LAB_FALSE,
-  LAB_TRUE
+  LAB_FALSE  /*!0*/,
+  LAB_TRUE   /*!1*/
 } boolean_t;
 
 boolean_t LabInit(void);

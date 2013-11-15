@@ -1,3 +1,7 @@
+/** @file labengine.c
+ * LabEngine library implementation.
+ */
+
 #include "labengine.h"
 
 #include <windows.h>
@@ -11,17 +15,29 @@
 
 typedef struct lab_globals
 {
+  /// if value is LAB_TRUE, graphics mode has already been initialized
   boolean_t init;
+  /// receives the thread identifier when thread creates in <code>CreateThread()</code> function
   DWORD threadId;
+  /// handle to a new thread - return value of <code>CreateThread()</code> function
   HANDLE thread;
+  /// event used to synchronize with the main thread
   HANDLE syncEvent;
+  /// handle to a window
   HWND hwnd;
+  /// if value is LAB_TRUE, window will be destroyed and graphics mode will be closed
   boolean_t quit;
-  LONG width; // initialization in LabInit()
+  /// width of window
+  LONG width;
+  /// height of window
   LONG height;
+  /// a handle to a bitmap used to draw
   HBITMAP hbm;
+  /// a handle to device context of hbm
   HDC hbmdc;
+  /// a handle to a region to be updated after drawing
   HRGN hrgn;
+  /// critical section object used to provide sinchronization
   CRITICAL_SECTION cs;
 } lab_globals;
 
@@ -116,6 +132,14 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
 //   Graphics
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/** 
+ * Draw line which joins point (x1, y1) and (x2, y2).
+ *
+ * @param x1 x-coordinate of first point
+ * @param y1 y-coordinate of first point
+ * @param x2 x-coordinate of second point
+ * @param y2 y-coordinate of second point
+ */
 void LabDrawLine(int x1, int y1,  int x2, int y2)
 {
   RECT r;
@@ -299,6 +323,14 @@ static void _labThreadCleanup(void)
   }
 }
 
+/**
+ * @brief Initializes graphics.
+ * 
+ * Initializes structure lab_globals if it is not initialized yet.
+ * Creates thread for message processing and runs it.
+ *
+ * @return LAB_TRUE if initialization was successful, otherwise return value is LAB_FALSE
+ */
 boolean_t LabInit(void)
 {
   DWORD res;
@@ -341,6 +373,13 @@ on_error:
   return LAB_FALSE;
 }
 
+
+
+/**
+ * @brief Terminates work with graphics
+ * 
+ * Requests the tread to terminate by closing the window and destroys the thread.
+ */
 void LabTerm(void)
 {
   DWORD res;
@@ -364,12 +403,26 @@ void LabTerm(void)
   s_globals.init = LAB_FALSE;
 }
 
-//get width and height of the window
+/**
+ * @brief Gets window width.
+ * 
+ * Takes current window width from structure lab_globals and returns token value.
+ * @return an integer value - window width
+ * @see LabGetHeight
+ */
 int LabGetWidth(void)
 {
   return s_globals.width;
 }
 
+
+/**
+ * @brief Gets window height.
+ * 
+ * Takes current window height from structure lab_globals and returns token value.
+ * @return an integer value - window height
+ * @see LabGetWidth
+ */
 int LabGetHeight(void)
 {
   return s_globals.height;
