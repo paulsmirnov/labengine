@@ -9,10 +9,29 @@
 #include <stdio.h>
 #include <strsafe.h>
 
+#define BUFFER_SIZE 32 /// size of queue for keyboard buffer (31 + 1)
+#define MAX_SEM_COUNT BUFFER_SIZE /// max semaphore object count
+
 #ifdef _DEBUG 
 #define LAB_ENABLE_REPORT
 #endif
 
+/**
+ * structure for keyboard buffer implementation
+ */
+typedef struct lab_queue
+{
+  /// index of first element in queue
+  int start;
+  /// index next to the last element in queue
+  int end;
+  /// circular queue
+  int key[BUFFER_SIZE];
+} lab_queue;
+
+/**
+ * structure which contains information about threads, window and other objects
+ */
 typedef struct lab_globals
 {
   /// if value is LAB_TRUE, graphics mode has already been initialized
@@ -37,8 +56,10 @@ typedef struct lab_globals
   HDC hbmdc;
   /// a handle to a region to be updated after drawing
   HRGN hrgn;
-  /// critical section object used to provide sinchronization
+  /// critical section object used to provide sinchronization in graphics
   CRITICAL_SECTION cs;
+  /// semaphore object used to provide sinchronization in input system
+  HANDLE ghSemaphore;
 } lab_globals;
 
 static lab_globals s_globals = {
@@ -48,6 +69,12 @@ static lab_globals s_globals = {
   NULL,         // syncEvent
   NULL,         // hwnd
   LAB_FALSE,    // quit
+};
+
+static lab_queue key_queue = {
+  0,            // start
+  0,            // end
+  0,            // key[]
 };
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,6 +113,58 @@ void _labReportError()
 #endif LAB_ENABLE_REPORT
 }
 
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//   Queue functionality
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+boolean_t _labFullQue(void)
+{
+  return ((key_queue.start == key_queue.end + 1) || (key_queue.end - key_queue.start == BUFFER_SIZE - 1)) ? LAB_TRUE : LAB_FALSE;
+}
+
+boolean_t _labEmptyQue(void)
+{
+  return (key_queue.start == key_queue.end) ? LAB_TRUE : LAB_FALSE;
+}
+
+boolean_t _labPush(int c)
+{
+  if (!_labFullQue())
+  {
+    key_queue.key[key_queue.end] = c;
+    // make it circular
+    if (key_queue.end + 1 == BUFFER_SIZE)
+      key_queue.end = 0;
+    else
+      key_queue.end++;
+  }
+  else
+    MessageBeep(0xFFFFFFFF); // if queue is full, don't add element, just beep
+  if (!ReleaseSemaphore(s_globals.ghSemaphore, 1, NULL)) // increase semaphore oblect value by one
+    _labReportError();
+  return _labFullQue();
+}
+
+int _labPop(void)
+{
+  int key;
+  if (!_labEmptyQue())
+  {
+    key = key_queue.key[key_queue.start];
+    // pop elemnt
+    key_queue.key[key_queue.start] = 0;
+    // make it circular
+    if (key_queue.start + 1 == BUFFER_SIZE)
+      key_queue.start = 0;
+    else
+      key_queue.start++;
+    return key;
+  }
+  return 0; // if element was not deleted (queue was empty)
+}
+
+
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Message handlers
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,7 +196,6 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
   {
     if (TryEnterCriticalSection(&s_globals.cs))
     {
-    //  LabDrawLine(1, 40, 200, 400);
       res = BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom, s_globals.hbmdc, 0, 0, SRCCOPY);
       if (!res)
         _labReportError();
@@ -127,6 +205,119 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
   EndPaint(hwnd, &ps);
   return 0;
 }
+
+// button faces and 4 special keys processing
+static LRESULT _onChar(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
+{
+  int i;
+  int code;
+  int mask = 0x0000FFFF; // 00..011..1
+
+  // special codes for these keys
+  switch (wParam)  
+  {
+    case VK_RETURN: // ENTER key
+      code = LABKEY_ENTER;
+		  break;
+
+    case VK_ESCAPE:
+      code = LABKEY_ESC;
+		  break;
+    
+    case VK_BACK:
+      code = LABKEY_BACK;
+		  break;
+
+    case VK_TAB:
+      code = LABKEY_TAB;
+		  break;
+
+    default:
+      {
+        // button faces processing
+        code = wParam;
+        break;
+      }
+  }
+
+    for (i = 0; i < (mask & lParam); i++) // in lParam bits from 0 to 15 - the repeat count for the current message
+      if (_labPush(code)) // break if queue is full
+        break;
+  return 0;
+}
+
+// other keys processing
+static LRESULT _onKeydown(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
+{
+  int i;
+  int virtual_code;
+  int mask = 0x0000FFFF; // 00..011..1
+  switch (wParam) {
+
+    case VK_LEFT:
+      virtual_code = LABKEY_LEFT;
+		  break;
+
+		case VK_UP:
+      virtual_code = LABKEY_UP;
+		  break;
+
+		case VK_RIGHT:
+      virtual_code = LABKEY_RIGHT;
+		  break;
+
+		case VK_DOWN:
+      virtual_code = LABKEY_DOWN;
+		  break;
+    case VK_PRIOR: // PAGE UP key
+      virtual_code = LABKEY_PAGE_UP;
+		  break;
+
+		case VK_NEXT: // PAGE DOWN key
+      virtual_code = LABKEY_PAGE_DOWN;
+		  break;
+
+		default:
+		  return 0;
+  }
+
+  for (i = 0; i < (mask & lParam); i++)
+  {
+    if (_labPush(virtual_code))
+      break;
+  }
+  return 0;
+}
+
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//   Input system
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** 
+ * Waits until key pressed and push key pressed code to the keyboard buffer
+ *
+ * @return integer value - code of the key that was pressed
+ */
+int LabInputKey(void)
+{
+  // waits until key pressed in another thread and decreases semaphore object
+  WaitForSingleObject(s_globals.ghSemaphore, INFINITE); 
+  InvalidateRect(s_globals.hwnd, NULL, FALSE);
+  return _labPop();
+}
+
+/** 
+ * @brief Checks if there are any keys in the keyboard buffer
+ *
+ * Buffer is not empty means that it contains not processed by user who calls this function keystrokes
+ * @return LAB_TRUE if buffer is not empty and keystroke is ready to be processed, else return value is LAB_FALSE
+ */
+boolean_t LabInputKeyReady(void)
+{
+  return (_labEmptyQue() == LAB_FALSE) ? LAB_TRUE : LAB_FALSE;
+}
+
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Graphics
@@ -157,6 +348,7 @@ void LabDrawLine(int x1, int y1,  int x2, int y2)
   }
 }
 
+
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Window procedure
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -175,6 +367,8 @@ static LRESULT CALLBACK _labWindowProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPAR
     HANDLE_MESSAGE(WM_CLOSE, _onClose);
     HANDLE_MESSAGE(WM_DESTROY, _onDestroy);
     HANDLE_MESSAGE(WM_PAINT, _onPaint);
+    HANDLE_MESSAGE(WM_KEYDOWN, _onKeydown);
+    HANDLE_MESSAGE(WM_CHAR, _onChar);
 
   default:
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -235,6 +429,16 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
   // create window
   s_globals.hwnd = _labCreateWindow();
   if (s_globals.hwnd == NULL)
+    _labReportError();
+
+  // create semaphore object
+  s_globals.ghSemaphore = CreateSemaphore( 
+        NULL,           // default security attributes
+        0,              // initial count
+        MAX_SEM_COUNT,  // maximum count
+        NULL);          // unnamed semaphore
+
+  if (s_globals.ghSemaphore == NULL)
     _labReportError();
 
   // create second frame buffer
