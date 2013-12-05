@@ -35,7 +35,7 @@ typedef struct lab_queue
 typedef struct lab_globals
 {
   /// if value is LAB_TRUE, graphics mode has already been initialized
-  boolean_t init;
+  labbool_t init;
   /// receives the thread identifier when thread creates in <code>CreateThread()</code> function
   DWORD threadId;
   /// handle to a new thread - return value of <code>CreateThread()</code> function
@@ -45,7 +45,7 @@ typedef struct lab_globals
   /// handle to a window
   HWND hwnd;
   /// if value is LAB_TRUE, window will be destroyed and graphics mode will be closed
-  boolean_t quit;
+  labbool_t quit;
   /// width of window
   LONG width;
   /// height of window
@@ -118,17 +118,17 @@ void _labReportError()
 //   Queue functionality
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-boolean_t _labFullQue(void)
+labbool_t _labFullQue(void)
 {
   return ((key_queue.start == key_queue.end + 1) || (key_queue.end - key_queue.start == BUFFER_SIZE - 1)) ? LAB_TRUE : LAB_FALSE;
 }
 
-boolean_t _labEmptyQue(void)
+labbool_t _labEmptyQue(void)
 {
   return (key_queue.start == key_queue.end) ? LAB_TRUE : LAB_FALSE;
 }
 
-boolean_t _labPush(int c)
+labbool_t _labPush(int c)
 {
   if (!_labFullQue())
   {
@@ -313,7 +313,7 @@ int LabInputKey(void)
  * Buffer is not empty means that it contains not processed by user who calls this function keystrokes
  * @return LAB_TRUE if buffer is not empty and keystroke is ready to be processed, else return value is LAB_FALSE
  */
-boolean_t LabInputKeyReady(void)
+labbool_t LabInputKeyReady(void)
 {
   return (_labEmptyQue() == LAB_FALSE) ? LAB_TRUE : LAB_FALSE;
 }
@@ -535,7 +535,7 @@ static void _labThreadCleanup(void)
  *
  * @return LAB_TRUE if initialization was successful, otherwise return value is LAB_FALSE
  */
-boolean_t LabInit(void)
+labbool_t LabInit(void)
 {
   DWORD res;
   LPTHREAD_START_ROUTINE lpStartAddress = NULL;
