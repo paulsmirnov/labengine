@@ -32,6 +32,24 @@ typedef enum labkey_t
  
 } labkey_t;
 
+
+/**
+ * color palette
+ */
+typedef enum labcolor_t 
+{ 
+  LABCOLOR_RED = 0x000C, //IRGB - 1100
+  LABCOLOR_GREEN = 0x000A,
+  LABCOLOR_BLUE = 0x0009,
+  LABCOLOR_BLACK = LABCOLOR_RED & LABCOLOR_GREEN & LABCOLOR_BLUE,
+  LABCOLOR_WHITE = LABCOLOR_RED | LABCOLOR_GREEN | LABCOLOR_BLUE,
+  LABCOLOR_YELLOW = LABCOLOR_RED | LABCOLOR_GREEN,
+  LABCOLOR_CYAN = LABCOLOR_GREEN | LABCOLOR_BLUE,
+  LABCOLOR_MAGENTA = LABCOLOR_BLUE | LABCOLOR_RED,
+    
+} labcolor_t;
+
+
 labbool_t LabInit(void);
 void LabTerm(void);
 int LabGetWidth(void);
@@ -39,5 +57,6 @@ int LabGetHeight(void);
 void LabDrawLine(int x1, int y1, int x2, int y2);
 int LabInputKey(void);
 labbool_t LabInputKeyReady(void);
+void LabSetColor(labcolor_t);
 
 #endif // LABENGINE_H_INCLUDED

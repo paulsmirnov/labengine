@@ -324,6 +324,25 @@ labbool_t LabInputKeyReady(void)
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** 
+ * Sets new line color
+ *
+ * @param color new line color
+ */
+void LabSetColor(labcolor_t color)
+{
+    int r, g, b;
+    int r_mask = (color & 7) >> 2; // last three bits, right bit is needed
+    int g_mask = (color & 3) >> 1;
+    int b_mask = (color & 1);
+    r = (color >> 3) ? r_mask * 255 : r_mask * 127;
+    g = (color >> 3) ? g_mask * 255 : g_mask * 127;
+    b = (color >> 3) ? b_mask * 255 : b_mask * 127;
+    SelectObject(s_globals.hbmdc, GetStockObject(DC_PEN));
+    SetDCPenColor(s_globals.hbmdc, RGB(r, g, b));
+}
+
+
+/** 
  * Draw line which joins point (x1, y1) and (x2, y2).
  *
  * @param x1 x-coordinate of first point
