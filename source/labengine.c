@@ -307,6 +307,7 @@ int LabInputKey(void)
   return _labPop();
 }
 
+
 /** 
  * @brief Checks if there are any keys in the keyboard buffer
  *
