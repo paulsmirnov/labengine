@@ -1,6 +1,11 @@
 #ifndef LABENGINE_H_INCLUDED
 #define LABENGINE_H_INCLUDED
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /**
  * @brief Логический тип.
  *
@@ -137,5 +142,10 @@ labbool_t LabInputKeyReady(void);
  * @see labcolor_t
  */
 void LabSetColor(labcolor_t color);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LABENGINE_H_INCLUDED
