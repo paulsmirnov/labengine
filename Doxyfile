@@ -743,7 +743,11 @@ WARN_LOGFILE           =
 # spaces.
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = ./source/labengine.h
+INPUT                  = ./source/labengine.h \
+                         ./source/doc/mainpage.dox \
+                         ./source/doc/inputsystem.dox \
+                         ./source/doc/lifecycle.dox \
+                         ./source/doc/graphics.dox
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1267,7 +1271,7 @@ GENERATE_HTMLHELP      = YES
 # written to the html output directory.
 # This tag requires that the tag GENERATE_HTMLHELP is set to YES.
 
-CHM_FILE               = ../../../doc/labengine.chm
+CHM_FILE               = labengine.chm
 
 # The HHC_LOCATION tag can be used to specify the location (absolute path
 # including file name) of the HTML help compiler ( hhc.exe). If non-empty

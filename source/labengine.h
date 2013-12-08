@@ -5,7 +5,6 @@
 extern "C" {
 #endif
 
-
 /**
  * @brief Логический тип.
  *
@@ -18,6 +17,14 @@ typedef enum labbool_t
   LAB_FALSE, ///< Ложь (0)
   LAB_TRUE   ///< Истина (1)
 } labbool_t;
+
+/**
+ * \defgroup input_system_group Система ввода
+ *
+ * Группа функций, обеспечивающая возможность работы с клавиатурой.
+ * Подробнее о группе: \ref input_system
+ * @{
+ */
 
 /**
  * @brief Коды несимвольных клавиш.
@@ -42,6 +49,8 @@ typedef enum labkey_t
   LABKEY_DOWN = 0x2800,       ///< Стрелка вниз
  
 } labkey_t;
+/**@}*/
+
 
 /**
  * @brief Названия цветов цветовой палитры.
@@ -65,6 +74,13 @@ typedef enum labcolor_t
 } labcolor_t;
 
 /**
+ * \defgroup lifecycle_group Жизненный цикл приложения
+ *
+ * Функции инициализации графического режима и окончания работы в нём.
+ * Подробнее о группе: \ref lifecycle
+ * @{
+ */
+/**
  * @brief Инициализация графического режима.
  * 
  * Необходим вызов перед работой с другими функциями библиотеки, то есть в графическом
@@ -85,7 +101,16 @@ labbool_t LabInit(void);
  * @see LabInit
  */
 void LabTerm(void);
+/**@}*/
 
+
+/**
+ * \defgroup graphics_group Графический вывод
+ *
+ * Функции графического вывода и получения информации об окне.
+ * Подробнее о группе: \ref graphics
+ * @{
+ */
 /**
  * @brief Получение ширины окна.
  * 
@@ -115,6 +140,21 @@ int LabGetHeight(void);
 void LabDrawLine(int x1, int y1, int x2, int y2);
 
 /** 
+ * Установка цвета для последующего рисования графических объектов.
+ *
+ * По умолчанию (до первого вызова этой функции) используется чёрный цвет.
+ *
+ * @param color новый цвет из перечисления <code>labcolor_t</code>.
+ * @see labcolor_t
+ */
+void LabSetColor(labcolor_t color);
+/**@}*/
+
+
+/** \addtogroup input_system_group 
+ *  @{
+ */
+/** 
  * @brief Ожидание нажатия клавиши, затем, возврат её кода.
  * 
  * Ожидает нажатия клавиши, а затем, когда клавиша нажата, возвращает её код -
@@ -132,16 +172,7 @@ int LabInputKey(void);
  * @return LAB_TRUE если есть необработанные нажатия клавиш, LAB_FALSE, если таких нет.
  */
 labbool_t LabInputKeyReady(void);
-
-/** 
- * Установка цвета для последующего рисования графических объектов.
- *
- * По умолчанию (до первого вызова этой функции) используется чёрный цвет.
- *
- * @param color новый цвет из перечисления <code>labcolor_t</code>.
- * @see labcolor_t
- */
-void LabSetColor(labcolor_t color);
+/** @}*/
 
 
 #ifdef __cplusplus
