@@ -62,15 +62,22 @@ typedef enum labkey_t
  */
 typedef enum labcolor_t 
 { 
-  LABCOLOR_RED = 0x000C,                                          ///< Красный
-  LABCOLOR_GREEN = 0x000A,                                        ///< Зелёный
-  LABCOLOR_BLUE = 0x0009,                                         ///< Синий
-  LABCOLOR_BLACK = LABCOLOR_RED & LABCOLOR_GREEN & LABCOLOR_BLUE, ///< Чёрный
-  LABCOLOR_WHITE = LABCOLOR_RED | LABCOLOR_GREEN | LABCOLOR_BLUE, ///< Белый
-  LABCOLOR_YELLOW = LABCOLOR_RED | LABCOLOR_GREEN,                ///< Жёлтый
-  LABCOLOR_CYAN = LABCOLOR_GREEN | LABCOLOR_BLUE,                 ///< Голубой
-  LABCOLOR_MAGENTA = LABCOLOR_BLUE | LABCOLOR_RED,                ///< Пурпурный
-    
+  LABCOLOR_BLACK,         ///< Чёрный
+  LABCOLOR_DARK_BLUE,     ///< Тёмно-синий
+  LABCOLOR_DARK_GREEN,    ///< Тёмно-зелёный
+  LABCOLOR_DARK_CYAN,     ///< Сине-зелёный
+  LABCOLOR_DARK_RED,      ///< Коричнево-малиновый
+  LABCOLOR_DARK_MAGENTA,  ///< Фиолетово-баклажанный
+  LABCOLOR_DARK_YELLOW,   ///< Оливковый
+  LABCOLOR_DARK_GREY,     ///< Тёмно-серый
+  LABCOLOR_LIGHT_GREY,    ///< Светло-серый
+  LABCOLOR_LIGHT_BLUE,    ///< Синий
+  LABCOLOR_LIGHT_GREEN,   ///< Зелёный
+  LABCOLOR_LIGHT_CYAN,    ///< Голубой
+  LABCOLOR_LIGHT_RED,     ///< Красный
+  LABCOLOR_LIGHT_MAGENTA, ///< Пурпурный
+  LABCOLOR_LIGHT_YELLOW,  ///< Жёлтый
+  LABCOLOR_WHITE,         ///< Белый
 } labcolor_t;
 
 /**
@@ -172,6 +179,13 @@ int LabInputKey(void);
  * @return LAB_TRUE если есть необработанные нажатия клавиш, LAB_FALSE, если таких нет.
  */
 labbool_t LabInputKeyReady(void);
+
+/** 
+ * Номер текущего цвета кисти.
+ *
+ * @retrun целое число - номер цвета.
+ */
+int LabGetColor(void);
 /** @}*/
 
 

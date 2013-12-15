@@ -38,44 +38,9 @@ int main(void)
         break;
     }
     /* COLOR TEST */
-    switch (y % 7) 
-    {
-      case 0:
-        LabSetColor(LABCOLOR_RED);
-        break;
-
-      case 1:
-        LabSetColor(LABCOLOR_BLUE);
-        break;
-
-      case 2:
-        LabSetColor(LABCOLOR_GREEN);
-        break;
-
-      case 3:
-        LabSetColor(LABCOLOR_YELLOW);
-        break;
-
-      case 4:
-        LabSetColor(LABCOLOR_MAGENTA);
-        break;
-
-      case 5:
-        LabSetColor(LABCOLOR_CYAN);
-        break;
-
-      case 6:
-        LabSetColor(LABCOLOR_BLACK);
-        break;
-
-      default:
-        break;
-    }
-
+    LabSetColor((y / 3) % 15);    
     /* GRAPHICS TEST */
     LabDrawLine(x, y, x + 10, y);
-
-
   }
 
   /*printf("Width is %i, height is %i\n", LabGetWidth(), LabGetHeight()); // window sizes

@@ -30,6 +30,19 @@ typedef struct lab_queue
 } lab_queue;
 
 /**
+ * structure for colors identification
+ */
+typedef struct lab_colors
+{
+  /// red component
+  int r;
+  /// green
+  int g;
+  /// blue
+  int b;
+} lab_colors;
+
+/**
  * structure which contains information about threads, window and other objects
  */
 typedef struct lab_globals
@@ -60,6 +73,10 @@ typedef struct lab_globals
   CRITICAL_SECTION cs;
   /// semaphore object used to provide sinchronization in input system
   HANDLE ghSemaphore;
+  /// array of colors (array of rgb)
+  lab_colors colors[15];
+  /// current pen color
+  int penColor;
 } lab_globals;
 
 static lab_globals s_globals = {
@@ -325,23 +342,55 @@ labbool_t LabInputKeyReady(void)
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** 
+ * Initializes colors components (r, g, and b)
+ */
+void _labInitColors(void)
+{
+  #define _lab_GREY_COLOR 192
+  #define _lab_LIGHT 255
+  #define _lab_DARK 127
+  int color;
+  int r_mask;
+  int g_mask;
+  int b_mask;
+  for (color = 0; color < 15; color++)
+  {
+    r_mask = (color & 7) >> 2; // last three bits, right bit is needed
+    g_mask = (color & 3) >> 1;
+    b_mask = (color & 1);
+    s_globals.colors[color].r = (color >> 3) ? r_mask * _lab_LIGHT : r_mask * _lab_DARK;
+    s_globals.colors[color].g = (color >> 3) ? g_mask * _lab_LIGHT : g_mask * _lab_DARK;
+    s_globals.colors[color].b = (color >> 3) ? b_mask * _lab_LIGHT : b_mask * _lab_DARK;
+    if (color == LABCOLOR_LIGHT_GREY)
+    {
+      s_globals.colors[color].r = _lab_GREY_COLOR;
+      s_globals.colors[color].g = _lab_GREY_COLOR;
+      s_globals.colors[color].b = _lab_GREY_COLOR;
+    }
+  }
+}
+
+/** 
  * Sets new line color
  *
  * @param color new line color
  */
 void LabSetColor(labcolor_t color)
 {
-    int r, g, b;
-    int r_mask = (color & 7) >> 2; // last three bits, right bit is needed
-    int g_mask = (color & 3) >> 1;
-    int b_mask = (color & 1);
-    r = (color >> 3) ? r_mask * 255 : r_mask * 127;
-    g = (color >> 3) ? g_mask * 255 : g_mask * 127;
-    b = (color >> 3) ? b_mask * 255 : b_mask * 127;
+    s_globals.penColor = color;
     SelectObject(s_globals.hbmdc, GetStockObject(DC_PEN));
-    SetDCPenColor(s_globals.hbmdc, RGB(r, g, b));
+    SetDCPenColor(s_globals.hbmdc, RGB(s_globals.colors[color].r, s_globals.colors[color].g, s_globals.colors[color].b));
 }
 
+/** 
+ * Get current line color
+ *
+ * @retrun integer value - current color
+ */
+int LabGetColor(void)
+{
+  return s_globals.penColor;
+}
 
 /** 
  * Draw line which joins point (x1, y1) and (x2, y2).
@@ -567,6 +616,9 @@ labbool_t LabInit(void)
   s_globals.width = 640;
   s_globals.height = 480;
   
+  // initialize colors
+  _labInitColors();
+
   // create synchronization object
   s_globals.syncEvent = CreateEvent(NULL, FALSE, FALSE, TEXT("LabSyncEvent"));
   if (!s_globals.syncEvent)
