@@ -22,25 +22,33 @@ int main(void)
     switch (key)
     {
       case LABKEY_UP:
-        y -= 3;
+        y -= 20;
         break;
       case LABKEY_LEFT:
-        x -= 3;
+        x -= 20;
         break;
       case LABKEY_RIGHT:
-        x += 3;
+        x += 20;
         break;
       case LABKEY_DOWN:
-        y += 3;
+        y += 20;
         break;
       default:
         printf("'%c' was pressed!\n", key); //for character (= button face) keys
         break;
     }
     /* COLOR TEST */
-    LabSetColor((y / 3) % 15);    
+    LabSetColor((y / 20) % 15);  
+    if (LabGetColor() == LABCOLOR_BLACK)  // всё равно откуда-то берётся чёрный цвет (проплешины какие-то в картинке)
+      LabSetColor(LABCOLOR_DARK_CYAN); 
+
     /* GRAPHICS TEST */
-    LabDrawLine(x, y, x + 10, y);
+    //  LabDrawLine(x, y, x + 10, y);
+    //  LabDrawPoint(x, y);
+    //  LabDrawRectangle(x, y, x + 25, y + 25);
+    //  LabDrawCircle(x, y, 25);
+    LabDrawEllipse(x, y, 25, 10);
+
   }
 
   /*printf("Width is %i, height is %i\n", LabGetWidth(), LabGetHeight()); // window sizes

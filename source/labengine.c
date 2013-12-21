@@ -417,6 +417,103 @@ void LabDrawLine(int x1, int y1,  int x2, int y2)
   }
 }
 
+/** 
+ * Draw point with coordinates (x, y)
+ *
+ * @param x x-coordinate of point
+ * @param y y-coordinate of point
+ */
+void LabDrawPoint(int x, int y)
+{
+  RECT r;
+  lab_colors color = s_globals.colors[s_globals.penColor];
+ // define region to redraw
+  r.left = x;
+  r.right = x;
+  r.top = y;
+  r.bottom = y;
+  if (TryEnterCriticalSection(&s_globals.cs))
+  {
+    SetPixel(s_globals.hbmdc, x, y, RGB(color.r, color.g, color.b)); // draw point in current color
+    InvalidateRect(s_globals.hwnd, &r, FALSE);
+    LeaveCriticalSection(&s_globals.cs);
+  }
+}
+
+/** 
+ * Draw circle which center in (x, y) and radius radius.
+ *
+ * @param x x-coordinate of center
+ * @param y y-coordinate of center
+ * @param radius radius
+ */
+void LabDrawCircle(int x, int y,  int radius)
+{
+  RECT r;
+  // define region to redraw
+  r.left = x - radius;
+  r.right = x + radius;
+  r.top = y - radius;
+  r.bottom = y + radius;
+  if (TryEnterCriticalSection(&s_globals.cs))
+  {
+    SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled circle
+    Ellipse(s_globals.hbmdc, x - radius, y - radius, x + radius, y + radius); 
+    InvalidateRect(s_globals.hwnd, &r, FALSE);
+    LeaveCriticalSection(&s_globals.cs);
+  }
+}
+
+/** 
+ * Draw ellipse which center in (x, y) and semiaxises a and b.
+ *
+ * @param x x-coordinate of center
+ * @param y y-coordinate of center
+ * @param a semi-major axis
+ * @param b semi-minor axis
+ */
+void LabDrawEllipse(int x, int y,  int a, int b)
+{
+  RECT r;
+  // define region to redraw
+  r.left = x - a;
+  r.right = x + a;
+  r.top = y - b;
+  r.bottom = y + b;
+  if (TryEnterCriticalSection(&s_globals.cs))
+  {
+    SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled ellipse
+    Ellipse(s_globals.hbmdc, x - a, y - b, x + a, y + b); 
+    InvalidateRect(s_globals.hwnd, NULL, FALSE); // Если тут не NULL, а положенный &r, то обновляется медленно при удерживании клавиши.
+    LeaveCriticalSection(&s_globals.cs);
+  }
+}
+
+/** 
+ * Draw rectangle on upper-left corner with coordinate (x1, y1) and bottom-right (x2, y2).
+ *
+ * @param x1 x-coordinate of upper-left corner
+ * @param y1 y-coordinate of upper-left corner
+ * @param x2 x-coordinate of bottom-right corner
+ * @param y2 y-coordinate of bottom-right corner
+ */
+void LabDrawRectangle(int x1, int y1,  int x2, int y2)
+{
+  RECT r;
+ // define region to redraw
+  r.left = x1;
+  r.right = x2;
+  r.top = y1;
+  r.bottom = y2;
+  if (TryEnterCriticalSection(&s_globals.cs))
+  {
+    SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled rectangle
+    Rectangle(s_globals.hbmdc, r.left, r.top, r.right, r.bottom);
+    InvalidateRect(s_globals.hwnd, &r, FALSE);
+    LeaveCriticalSection(&s_globals.cs);
+  }
+}
+
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Window procedure
