@@ -530,9 +530,9 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
   InitializeCriticalSection(&s_globals.cs);
 
   // initialize pen and background colors
-  SelectObject(s_globals.hbmdc, GetStockObject(BLACK_PEN));
-  SelectObject(s_globals.hbmdc, GetStockObject(HOLLOW_BRUSH));
-  FillRect(s_globals.hbmdc, &rect, (HBRUSH) (HOLLOW_BRUSH));
+  SelectObject(s_globals.hbmdc, GetStockObject(WHITE_PEN));
+  SelectObject(s_globals.hbmdc, GetStockObject(BLACK_BRUSH));
+  //FillRect(s_globals.hbmdc, &rect, (HBRUSH) (BLACK_BRUSH));
   InvalidateRect(s_globals.hwnd, NULL, TRUE);
 
   // synchronize with the main thread
