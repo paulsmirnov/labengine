@@ -232,7 +232,7 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
 //    if (TryEnterCriticalSection(&s_globals.cs))
     EnterCriticalSection(&s_globals.cs);
     {
-      res = BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom, s_globals.hbmdc, 0, 0, SRCCOPY);
+      res = BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom, s_globals.hbmdc, ps.rcPaint.left, ps.rcPaint.top, SRCCOPY);
       if (!res)
         _labReportError();
       LeaveCriticalSection(&s_globals.cs);
