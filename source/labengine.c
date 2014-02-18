@@ -211,7 +211,8 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
   hdc = BeginPaint(hwnd, &ps);
   if (hdc)
   {
-    if (TryEnterCriticalSection(&s_globals.cs))
+//    if (TryEnterCriticalSection(&s_globals.cs))
+    EnterCriticalSection(&s_globals.cs);
     {
       res = BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom, s_globals.hbmdc, 0, 0, SRCCOPY);
       if (!res)
@@ -408,7 +409,8 @@ void LabDrawLine(int x1, int y1,  int x2, int y2)
   r.right = x2;
   r.top = y1;
   r.bottom = y2;
-  if (TryEnterCriticalSection(&s_globals.cs))
+//  if (TryEnterCriticalSection(&s_globals.cs))
+  EnterCriticalSection(&s_globals.cs);
   {
     MoveToEx(s_globals.hbmdc, x1, y1, NULL);
     LineTo(s_globals.hbmdc, x2, y2);
@@ -432,7 +434,8 @@ void LabDrawPoint(int x, int y)
   r.right = x;
   r.top = y;
   r.bottom = y;
-  if (TryEnterCriticalSection(&s_globals.cs))
+//  if (TryEnterCriticalSection(&s_globals.cs))
+  EnterCriticalSection(&s_globals.cs);
   {
     SetPixel(s_globals.hbmdc, x, y, RGB(color.r, color.g, color.b)); // draw point in current color
     InvalidateRect(s_globals.hwnd, &r, FALSE);
@@ -455,7 +458,8 @@ void LabDrawCircle(int x, int y,  int radius)
   r.right = x + radius;
   r.top = y - radius;
   r.bottom = y + radius;
-  if (TryEnterCriticalSection(&s_globals.cs))
+//  if (TryEnterCriticalSection(&s_globals.cs))
+  EnterCriticalSection(&s_globals.cs);
   {
     SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled circle
     Ellipse(s_globals.hbmdc, x - radius, y - radius, x + radius, y + radius); 
@@ -480,7 +484,8 @@ void LabDrawEllipse(int x, int y,  int a, int b)
   r.right = x + a;
   r.top = y - b;
   r.bottom = y + b;
-  if (TryEnterCriticalSection(&s_globals.cs))
+//  if (TryEnterCriticalSection(&s_globals.cs))
+  EnterCriticalSection(&s_globals.cs);
   {
     SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled ellipse
     Ellipse(s_globals.hbmdc, x - a, y - b, x + a, y + b); 
@@ -505,7 +510,8 @@ void LabDrawRectangle(int x1, int y1,  int x2, int y2)
   r.right = x2;
   r.top = y1;
   r.bottom = y2;
-  if (TryEnterCriticalSection(&s_globals.cs))
+//  if (TryEnterCriticalSection(&s_globals.cs))
+  EnterCriticalSection(&s_globals.cs);
   {
     SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled rectangle
     Rectangle(s_globals.hbmdc, r.left, r.top, r.right, r.bottom);
