@@ -1,6 +1,10 @@
 #ifndef LABENGINE_H_INCLUDED
 #define LABENGINE_H_INCLUDED
 
+#pragma comment(lib, "kernel32")
+#pragma comment(lib, "user32")
+#pragma comment(lib, "gdi32")
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -19,72 +23,10 @@ typedef enum labbool_t
 } labbool_t;
 
 /**
- * \defgroup input_system_group Система ввода
- *
- * Группа функций, обеспечивающая возможность работы с клавиатурой.
- * Подробнее о группе: \ref input_system
- * @{
- */
-
-/**
- * @brief Коды несимвольных клавиш.
- *
- * Специальные коды для клавиш Enter, Escape, стрелок...
- * Наряду с ASCII-кодами символьных клавиш, являются возвращаемым значением
- * из функции <code>LabInputKey()</code>.
- *
- * @see LabInputKey
- */
-typedef enum labkey_t
-{ 
-  LABKEY_ENTER = 0x0D00,      ///< Enter 
-  LABKEY_ESC = 0x1B00,        ///< Escape 
-  LABKEY_BACK = 0x0800,       ///< Backspace 
-  LABKEY_TAB = 0x0900,        ///< Tab 
-  LABKEY_PAGE_UP = 0x2100,    ///< PageUp 
-  LABKEY_PAGE_DOWN = 0x2200,  ///< PageDown 
-  LABKEY_LEFT = 0x2500,       ///< Стрелка влево
-  LABKEY_UP = 0x2600,         ///< Стрелка вверх
-  LABKEY_RIGHT = 0x2700,      ///< Стрелка вправо
-  LABKEY_DOWN = 0x2800,       ///< Стрелка вниз
- 
-} labkey_t;
-/**@}*/
-
-
-/**
- * @brief Названия цветов цветовой палитры.
- *
- * Используются для назначения цвета линий и других графических объектов.
- * Передаются в качестве параметра в функцию <code>LabSetColor()</code>.
- *
- * @see LabSetColor
- */
-typedef enum labcolor_t 
-{ 
-  LABCOLOR_BLACK,         ///< Чёрный
-  LABCOLOR_DARK_BLUE,     ///< Тёмно-синий
-  LABCOLOR_DARK_GREEN,    ///< Тёмно-зелёный
-  LABCOLOR_DARK_CYAN,     ///< Сине-зелёный
-  LABCOLOR_DARK_RED,      ///< Коричнево-малиновый
-  LABCOLOR_DARK_MAGENTA,  ///< Фиолетово-баклажанный
-  LABCOLOR_DARK_YELLOW,   ///< Оливковый
-  LABCOLOR_DARK_GREY,     ///< Тёмно-серый
-  LABCOLOR_LIGHT_GREY,    ///< Светло-серый
-  LABCOLOR_LIGHT_BLUE,    ///< Синий
-  LABCOLOR_LIGHT_GREEN,   ///< Зелёный
-  LABCOLOR_LIGHT_CYAN,    ///< Голубой
-  LABCOLOR_LIGHT_RED,     ///< Красный
-  LABCOLOR_LIGHT_MAGENTA, ///< Пурпурный
-  LABCOLOR_LIGHT_YELLOW,  ///< Жёлтый
-  LABCOLOR_WHITE,         ///< Белый
-} labcolor_t;
-
-/**
- * \defgroup lifecycle_group Жизненный цикл приложения
+ * \defgroup lifecycle_group Lifecycle Methods
  *
  * Функции инициализации графического режима и окончания работы в нём.
- * Подробнее о группе: \ref lifecycle
+ * Подробнее о группе: \ref lifecycle_group
  * @{
  */
 /**
@@ -112,12 +54,43 @@ void LabTerm(void);
 
 
 /**
- * \defgroup graphics_group Графический вывод
+ * \defgroup graphics_group Graphics Methods
  *
  * Функции графического вывода и получения информации об окне.
- * Подробнее о группе: \ref graphics
+ * Подробнее о группе: \ref graphics_group
  * @{
  */
+
+/**
+ * @brief Названия цветов цветовой палитры.
+ *
+ * Используются для назначения цвета линий и других графических объектов.
+ * Передаются в качестве параметра в функцию <code>LabSetColor()</code>.
+ *
+ * @see LabSetColor
+ */
+typedef enum labcolor_t 
+{ 
+  LABCOLOR_BLACK,         ///< Чёрный
+  LABCOLOR_DARK_BLUE,     ///< Тёмно-синий
+  LABCOLOR_DARK_GREEN,    ///< Тёмно-зелёный
+  LABCOLOR_DARK_CYAN,     ///< Сине-зелёный
+  LABCOLOR_DARK_RED,      ///< Коричнево-малиновый
+  LABCOLOR_DARK_MAGENTA,  ///< Фиолетово-баклажанный
+  LABCOLOR_DARK_YELLOW,   ///< Оливковый
+  LABCOLOR_DARK_GREY,     ///< Тёмно-серый
+  LABCOLOR_LIGHT_GREY,    ///< Светло-серый
+  LABCOLOR_LIGHT_BLUE,    ///< Синий
+  LABCOLOR_LIGHT_GREEN,   ///< Зелёный
+  LABCOLOR_LIGHT_CYAN,    ///< Голубой
+  LABCOLOR_LIGHT_RED,     ///< Красный
+  LABCOLOR_LIGHT_MAGENTA, ///< Пурпурный
+  LABCOLOR_LIGHT_YELLOW,  ///< Жёлтый
+  LABCOLOR_WHITE,         ///< Белый
+
+  LABCOLOR_COUNT          ///< Количество цветов в палитре
+} labcolor_t;
+
 /**
  * @brief Получение ширины окна.
  * 
@@ -192,7 +165,6 @@ void LabDrawCircle(int x, int y, int radius);
  */
 void LabDrawEllipse(int x, int y, int a, int b);
 
-
 /** 
  * Установка цвета для последующего рисования графических объектов.
  *
@@ -202,12 +174,48 @@ void LabDrawEllipse(int x, int y, int a, int b);
  * @see labcolor_t
  */
 void LabSetColor(labcolor_t color);
+
+/** 
+ * Номер текущего цвета кисти.
+ *
+ * @return целое число - номер текущего цвета.
+ */
+labcolor_t LabGetColor(void);
 /**@}*/
 
 
-/** \addtogroup input_system_group 
- *  @{
+/**
+ * \defgroup input_group Input Methods
+ *
+ * Группа функций, обеспечивающая возможность работы с клавиатурой.
+ * Подробнее о группе: \ref input_group
+ * @{
  */
+
+/**
+ * @brief Коды несимвольных клавиш.
+ *
+ * Специальные коды для клавиш Enter, Escape, стрелок...
+ * Наряду с ASCII-кодами символьных клавиш, являются возвращаемым значением
+ * из функции <code>LabInputKey()</code>.
+ *
+ * @see LabInputKey
+ */
+typedef enum labkey_t
+{ 
+  LABKEY_ENTER = 0x0D00,      ///< Enter 
+  LABKEY_ESC = 0x1B00,        ///< Escape 
+  LABKEY_BACK = 0x0800,       ///< Backspace 
+  LABKEY_TAB = 0x0900,        ///< Tab 
+  LABKEY_PAGE_UP = 0x2100,    ///< PageUp 
+  LABKEY_PAGE_DOWN = 0x2200,  ///< PageDown 
+  LABKEY_LEFT = 0x2500,       ///< Стрелка влево
+  LABKEY_UP = 0x2600,         ///< Стрелка вверх
+  LABKEY_RIGHT = 0x2700,      ///< Стрелка вправо
+  LABKEY_DOWN = 0x2800,       ///< Стрелка вниз
+ 
+} labkey_t;
+
 /** 
  * @brief Ожидание нажатия клавиши, затем, возврат её кода.
  * 
@@ -218,7 +226,7 @@ void LabSetColor(labcolor_t color);
  * @return целое число - код нажатой клавиши.
  * @see labkey_t
  */
-int LabInputKey(void);
+labkey_t LabInputKey(void);
 
 /** 
  * Проверка на наличие необработанных нажатий клавиш.
@@ -227,12 +235,6 @@ int LabInputKey(void);
  */
 labbool_t LabInputKeyReady(void);
 
-/** 
- * Номер текущего цвета кисти.
- *
- * @retrun целое число - номер цвета.
- */
-int LabGetColor(void);
 /** @}*/
 
 
