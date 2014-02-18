@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <math.h>
+#include <windows.h>
 #include "../source/labengine.h"
 
-void Run(void)
+void RunTV(void)
 {
 	int width, height;
 	int color;
@@ -25,11 +27,42 @@ void Run(void)
 	LabInputKey();
 }
 
+void DrawCircle(double angle, int radius, int color)
+{
+	int x, y;
+	int co, si;
+
+	x = LabGetWidth() / 2;
+	y = LabGetHeight() / 2;
+	co = (int)(cos(angle) * radius);
+	si = (int)(sin(angle) * radius);
+
+	LabSetColor(color);
+	LabDrawLine(x + co, y + si, x - si, y + co);
+	LabDrawLine(x - si, y + co, x - co, y - si);
+	LabDrawLine(x - co, y - si, x + si, y - co);
+	LabDrawLine(x + si, y - co, x + co, y + si);
+}
+
+void RunPoly(void)
+{
+	double angle = 0.0;
+	while (!LabInputKeyReady())
+	{
+		DrawCircle(angle, 100, LABCOLOR_BLACK);
+		angle += 0.05;
+		DrawCircle(angle, 100, LABCOLOR_GREEN);
+		Sleep(16);
+	}
+
+	LabInputKey();
+}
+
 int main(void)
 {
 	if (LabInit())
 	{
-		Run();
+		RunPoly();
 		LabTerm();
 	}
 }

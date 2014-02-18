@@ -655,6 +655,9 @@ static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
   SelectObject(s_globals.hbmdc, GetStockObject(WHITE_PEN));
   SelectObject(s_globals.hbmdc, GetStockObject(BLACK_BRUSH));
   //FillRect(s_globals.hbmdc, &rect, (HBRUSH) (BLACK_BRUSH));
+
+  // require to update the entire window first
+  GetClientRect(s_globals.hwnd, &s_globals.updateRect);
   InvalidateRect(s_globals.hwnd, NULL, TRUE);
 
   // synchronize with the main thread
