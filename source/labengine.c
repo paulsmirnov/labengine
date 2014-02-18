@@ -404,10 +404,10 @@ void LabDrawLine(int x1, int y1,  int x2, int y2)
 {
   RECT r;
  // define region to redraw
-  r.left = x1;
-  r.right = x2;
-  r.top = y1;
-  r.bottom = y2;
+  r.left = x1 < x2 ? x1 : x2;
+  r.right = x1 < x2 ? x2 : x1;
+  r.top = y1 < y2 ? y1 : y2;
+  r.bottom = y1 < y2 ? y2 : y1;
 //  if (TryEnterCriticalSection(&s_globals.cs))
   EnterCriticalSection(&s_globals.cs);
   {
