@@ -77,6 +77,8 @@ typedef struct lab_globals
   lab_rgb colors[LABCOLOR_COUNT];
   /// current pen color
   int penColor;
+  /// update area
+  RECT updateRect;
 } lab_globals;
 
 static lab_globals s_globals = {
@@ -223,20 +225,28 @@ static LRESULT _onDestroy(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _I
 
 static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
-  PAINTSTRUCT ps;
-  HDC hdc;
-  DWORD res;
-  hdc = BeginPaint(hwnd, &ps);
-  if (hdc)
-  {
-//    if (TryEnterCriticalSection(&s_globals.cs))
-    EnterCriticalSection(&s_globals.cs);
-    {
-      res = BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom, s_globals.hbmdc, ps.rcPaint.left, ps.rcPaint.top, SRCCOPY);
-      if (!res)
-        _labReportError();
-      LeaveCriticalSection(&s_globals.cs);
-    }
+	PAINTSTRUCT ps;
+	HDC hdc;
+	DWORD res;
+	EnterCriticalSection(&s_globals.cs);
+//	if (TryEnterCriticalSection(&s_globals.cs))
+	{
+		hdc = BeginPaint(hwnd, &ps);
+		if (hdc)
+		{
+			if (IsRectEmpty(&s_globals.updateRect))
+				CopyRect(&s_globals.updateRect, &ps.rcPaint);
+			res = BitBlt(hdc,
+				s_globals.updateRect.left, s_globals.updateRect.top,
+				s_globals.updateRect.right, s_globals.updateRect.bottom,
+				s_globals.hbmdc,
+				s_globals.updateRect.left, s_globals.updateRect.top,
+				SRCCOPY);
+			if (!res)
+				_labReportError();
+			SetRectEmpty(&s_globals.updateRect);
+		}
+		LeaveCriticalSection(&s_globals.cs);
   }
   EndPaint(hwnd, &ps);
   return 0;
@@ -339,7 +349,7 @@ int LabInputKey(void)
 {
   // waits until key pressed in another thread and decreases semaphore object
   WaitForSingleObject(s_globals.ghSemaphore, INFINITE); 
-  InvalidateRect(s_globals.hwnd, NULL, FALSE);
+//  InvalidateRect(s_globals.hwnd, NULL, FALSE);
   return _labPop();
 }
 
@@ -403,17 +413,18 @@ int LabGetColor(void)
 void LabDrawLine(int x1, int y1,  int x2, int y2)
 {
   RECT r;
- // define region to redraw
-  r.left = x1 < x2 ? x1 : x2;
-  r.right = x1 < x2 ? x2 : x1;
-  r.top = y1 < y2 ? y1 : y2;
-  r.bottom = y1 < y2 ? y2 : y1;
+  // define region to redraw
+  r.left   = x1 <= x2 ? x1 : x2 + 1;
+  r.right  = x1 <  x2 ? x2 : x1 + 1;
+  r.top    = y1 <= y2 ? y1 : y2 + 1;
+  r.bottom = y1 <  y2 ? y2 : y1 + 1;
 //  if (TryEnterCriticalSection(&s_globals.cs))
   EnterCriticalSection(&s_globals.cs);
   {
     MoveToEx(s_globals.hbmdc, x1, y1, NULL);
     LineTo(s_globals.hbmdc, x2, y2);
-    InvalidateRect(s_globals.hwnd, &r, FALSE);
+    UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
+    InvalidateRect(s_globals.hwnd, NULL, FALSE);
     LeaveCriticalSection(&s_globals.cs);
   }
 }
@@ -428,16 +439,17 @@ void LabDrawPoint(int x, int y)
 {
   RECT r;
   lab_rgb color = s_globals.colors[s_globals.penColor];
- // define region to redraw
-  r.left = x;
-  r.right = x;
-  r.top = y;
-  r.bottom = y;
+  // define region to redraw
+  r.left   = x;
+  r.right  = x + 1;
+  r.top    = y;
+  r.bottom = y + 1;
 //  if (TryEnterCriticalSection(&s_globals.cs))
   EnterCriticalSection(&s_globals.cs);
   {
     SetPixel(s_globals.hbmdc, x, y, RGB(color.r, color.g, color.b)); // draw point in current color
-    InvalidateRect(s_globals.hwnd, &r, FALSE);
+    UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
+    InvalidateRect(s_globals.hwnd, NULL, FALSE);
     LeaveCriticalSection(&s_globals.cs);
   }
 }
@@ -453,16 +465,17 @@ void LabDrawCircle(int x, int y,  int radius)
 {
   RECT r;
   // define region to redraw
-  r.left = x - radius;
-  r.right = x + radius;
-  r.top = y - radius;
-  r.bottom = y + radius;
+  r.left   = x - radius;
+  r.right  = x + radius + 1;
+  r.top    = y - radius;
+  r.bottom = y + radius + 1;
 //  if (TryEnterCriticalSection(&s_globals.cs))
   EnterCriticalSection(&s_globals.cs);
   {
     SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled circle
     Ellipse(s_globals.hbmdc, x - radius, y - radius, x + radius, y + radius); 
-    InvalidateRect(s_globals.hwnd, &r, FALSE);
+    UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
+    InvalidateRect(s_globals.hwnd, NULL, FALSE);
     LeaveCriticalSection(&s_globals.cs);
   }
 }
@@ -479,15 +492,16 @@ void LabDrawEllipse(int x, int y,  int a, int b)
 {
   RECT r;
   // define region to redraw
-  r.left = x - a;
-  r.right = x + a;
-  r.top = y - b;
-  r.bottom = y + b;
+  r.left   = x - a;
+  r.right  = x + a + 1;
+  r.top    = y - b;
+  r.bottom = y + b + 1;
 //  if (TryEnterCriticalSection(&s_globals.cs))
   EnterCriticalSection(&s_globals.cs);
   {
     SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled ellipse
     Ellipse(s_globals.hbmdc, x - a, y - b, x + a, y + b); 
+    UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
     InvalidateRect(s_globals.hwnd, NULL, FALSE); // Если тут не NULL, а положенный &r, то обновляется медленно при удерживании клавиши.
     LeaveCriticalSection(&s_globals.cs);
   }
@@ -504,21 +518,27 @@ void LabDrawEllipse(int x, int y,  int a, int b)
 void LabDrawRectangle(int x1, int y1,  int x2, int y2)
 {
   RECT r;
- // define region to redraw
-  r.left = x1;
-  r.right = x2;
-  r.top = y1;
-  r.bottom = y2;
+  // define region to redraw
+  r.left   = x1 < x2 ? x1 : x2;
+  r.right  = x1 < x2 ? x2 : x1;
+  r.top    = y1 < y2 ? y1 : y2;
+  r.bottom = y1 < y2 ? y2 : y1;
 //  if (TryEnterCriticalSection(&s_globals.cs))
   EnterCriticalSection(&s_globals.cs);
   {
     SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled rectangle
     Rectangle(s_globals.hbmdc, r.left, r.top, r.right, r.bottom);
-    InvalidateRect(s_globals.hwnd, &r, FALSE);
+    UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
+    InvalidateRect(s_globals.hwnd, NULL, FALSE);
     LeaveCriticalSection(&s_globals.cs);
   }
 }
 
+void LabDrawForceUpdate(void)
+{
+  InvalidateRect(s_globals.hwnd, NULL, FALSE);
+  UpdateWindow(s_globals.hwnd);
+}
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Window procedure
@@ -717,7 +737,9 @@ labbool_t LabInit(void)
 
   s_globals.width = 640;
   s_globals.height = 480;
-  
+
+  SetRectEmpty(&s_globals.updateRect);
+
   // initialize colors
   _labInitColors();
 
