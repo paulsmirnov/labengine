@@ -32,7 +32,7 @@ typedef struct lab_queue
 /**
  * structure for colors identification
  */
-typedef struct lab_colors
+typedef struct lab_rgb
 {
   /// red component
   int r;
@@ -40,7 +40,7 @@ typedef struct lab_colors
   int g;
   /// blue
   int b;
-} lab_colors;
+} lab_rgb;
 
 /**
  * structure which contains information about threads, window and other objects
@@ -74,7 +74,7 @@ typedef struct lab_globals
   /// semaphore object used to provide sinchronization in input system
   HANDLE ghSemaphore;
   /// array of colors (array of rgb)
-  lab_colors colors[15];
+  lab_rgb colors[LABCOLOR_COUNT];
   /// current pen color
   int penColor;
 } lab_globals;
@@ -94,6 +94,24 @@ static lab_queue key_queue = {
   0,            // key[]
 };
 
+static lab_rgb s_default_colors[] = {
+	{   0,   0,   0}, // LABCOLOR_BLACK,
+	{   0,   0, 128}, // LABCOLOR_DARK_BLUE,
+	{   0, 128,   0}, // LABCOLOR_DARK_GREEN,
+	{   0, 128, 255}, // LABCOLOR_DARK_CYAN,
+	{ 128,   0,   0}, // LABCOLOR_DARK_RED,
+	{ 128,   0, 128}, // LABCOLOR_DARK_MAGENTA,
+	{ 128,  64,   0}, // LABCOLOR_BROWN,
+	{ 192, 192, 192}, // LABCOLOR_LIGHT_GREY,
+	{ 128, 128, 128}, // LABCOLOR_DARK_GREY,
+	{   0,   0, 255}, // LABCOLOR_BLUE,
+	{   0, 255,   0}, // LABCOLOR_GREEN,
+	{   0, 255, 255}, // LABCOLOR_CYAN,
+	{ 255,   0,   0}, // LABCOLOR_RED,
+	{ 255,   0, 255}, // LABCOLOR_MAGENTA,
+	{ 255, 255,   0}, // LABCOLOR_YELLOW,
+	{ 255, 255, 255}, // LABCOLOR_WHITE,
+};
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Error report
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -347,28 +365,9 @@ labbool_t LabInputKeyReady(void)
  */
 void _labInitColors(void)
 {
-  #define _lab_GREY_COLOR 192
-  #define _lab_LIGHT 255
-  #define _lab_DARK 127
-  int color;
-  int r_mask;
-  int g_mask;
-  int b_mask;
-  for (color = 0; color < 15; color++)
-  {
-    r_mask = (color & 7) >> 2; // last three bits, right bit is needed
-    g_mask = (color & 3) >> 1;
-    b_mask = (color & 1);
-    s_globals.colors[color].r = (color >> 3) ? r_mask * _lab_LIGHT : r_mask * _lab_DARK;
-    s_globals.colors[color].g = (color >> 3) ? g_mask * _lab_LIGHT : g_mask * _lab_DARK;
-    s_globals.colors[color].b = (color >> 3) ? b_mask * _lab_LIGHT : b_mask * _lab_DARK;
-    if (color == LABCOLOR_LIGHT_GREY)
-    {
-      s_globals.colors[color].r = _lab_GREY_COLOR;
-      s_globals.colors[color].g = _lab_GREY_COLOR;
-      s_globals.colors[color].b = _lab_GREY_COLOR;
-    }
-  }
+	_STATIC_ASSERT(sizeof(s_default_colors) == sizeof(s_globals.colors));
+	_STATIC_ASSERT(sizeof(s_default_colors)/sizeof(s_default_colors[0]) == LABCOLOR_COUNT);
+	memcpy(s_globals.colors, s_default_colors, sizeof(s_globals.colors));
 }
 
 /** 
@@ -428,7 +427,7 @@ void LabDrawLine(int x1, int y1,  int x2, int y2)
 void LabDrawPoint(int x, int y)
 {
   RECT r;
-  lab_colors color = s_globals.colors[s_globals.penColor];
+  lab_rgb color = s_globals.colors[s_globals.penColor];
  // define region to redraw
   r.left = x;
   r.right = x;

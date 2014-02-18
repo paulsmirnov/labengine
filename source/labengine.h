@@ -74,18 +74,18 @@ typedef enum labcolor_t
   LABCOLOR_BLACK,         ///< Чёрный
   LABCOLOR_DARK_BLUE,     ///< Тёмно-синий
   LABCOLOR_DARK_GREEN,    ///< Тёмно-зелёный
-  LABCOLOR_DARK_CYAN,     ///< Сине-зелёный
-  LABCOLOR_DARK_RED,      ///< Коричнево-малиновый
-  LABCOLOR_DARK_MAGENTA,  ///< Фиолетово-баклажанный
-  LABCOLOR_DARK_YELLOW,   ///< Оливковый
-  LABCOLOR_DARK_GREY,     ///< Тёмно-серый
+  LABCOLOR_DARK_CYAN,     ///< Тёмно-голубой
+  LABCOLOR_DARK_RED,      ///< Тёмно-красный
+  LABCOLOR_DARK_MAGENTA,  ///< Тёмно-пурпурный
+  LABCOLOR_BROWN,         ///< Коричневый
   LABCOLOR_LIGHT_GREY,    ///< Светло-серый
-  LABCOLOR_LIGHT_BLUE,    ///< Синий
-  LABCOLOR_LIGHT_GREEN,   ///< Зелёный
-  LABCOLOR_LIGHT_CYAN,    ///< Голубой
-  LABCOLOR_LIGHT_RED,     ///< Красный
-  LABCOLOR_LIGHT_MAGENTA, ///< Пурпурный
-  LABCOLOR_LIGHT_YELLOW,  ///< Жёлтый
+  LABCOLOR_DARK_GREY,     ///< Тёмно-серый
+  LABCOLOR_BLUE,          ///< Синий
+  LABCOLOR_GREEN,         ///< Зелёный
+  LABCOLOR_CYAN,          ///< Голубой
+  LABCOLOR_RED,           ///< Красный
+  LABCOLOR_MAGENTA,       ///< Пурпурный
+  LABCOLOR_YELLOW,        ///< Жёлтый
   LABCOLOR_WHITE,         ///< Белый
 
   LABCOLOR_COUNT          ///< Количество цветов в палитре
