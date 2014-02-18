@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "labengine-vs08", "labengine-vs08.vcproj", "{40C72851-6F32-432D-8E63-3CFC199E0A56}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "labtest-vs08", "labtest-vs08.vcproj", "{395F2BA0-E5BF-4C0F-820D-CA3CC84D4BC0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{40C72851-6F32-432D-8E63-3CFC199E0A56} = {40C72851-6F32-432D-8E63-3CFC199E0A56}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{40C72851-6F32-432D-8E63-3CFC199E0A56}.Debug|Win32.ActiveCfg = Debug|Win32
+		{40C72851-6F32-432D-8E63-3CFC199E0A56}.Debug|Win32.Build.0 = Debug|Win32
+		{40C72851-6F32-432D-8E63-3CFC199E0A56}.Release|Win32.ActiveCfg = Release|Win32
+		{40C72851-6F32-432D-8E63-3CFC199E0A56}.Release|Win32.Build.0 = Release|Win32
+		{395F2BA0-E5BF-4C0F-820D-CA3CC84D4BC0}.Debug|Win32.ActiveCfg = Debug|Win32
+		{395F2BA0-E5BF-4C0F-820D-CA3CC84D4BC0}.Debug|Win32.Build.0 = Debug|Win32
+		{395F2BA0-E5BF-4C0F-820D-CA3CC84D4BC0}.Release|Win32.ActiveCfg = Release|Win32
+		{395F2BA0-E5BF-4C0F-820D-CA3CC84D4BC0}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

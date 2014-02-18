@@ -4,3 +4,5 @@ obj/
 *.suo
 *.opensdf
 doc/labengine.chm
+*.ncb
+*.user
