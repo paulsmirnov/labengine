@@ -806,6 +806,12 @@ void LabTerm(void)
   s_globals.init = LAB_FALSE;
 }
 
+void LabDelay(int time)
+{
+   Sleep(time);
+}
+
+
 /**
  * @brief Gets window width.
  * 

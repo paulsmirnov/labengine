@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <math.h>
-#include <windows.h>
 #include "../source/labengine.h"
 
 void RunTV(void)
@@ -50,10 +49,9 @@ void RunPoly(void)
 	while (!LabInputKeyReady())
 	{
 		LabClear();
-		//DrawCircle(angle, 100, LABCOLOR_BLACK);
 		angle += 0.05;
 		DrawCircle(angle, 100, LABCOLOR_GREEN);
-		Sleep(16);
+		LabDelay(20);
 	}
 
 	LabInputKey();

@@ -50,6 +50,13 @@ labbool_t LabInit(void);
  * @see LabInit
  */
 void LabTerm(void);
+
+/**
+ * @brief ѕриостанавливает исполнение программы на time мс
+ * 
+ * @param time количество миллисекунд
+ */
+void LabDelay(int time);
 /**@}*/
 
 
