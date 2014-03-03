@@ -49,7 +49,8 @@ void RunPoly(void)
 	double angle = 0.0;
 	while (!LabInputKeyReady())
 	{
-		DrawCircle(angle, 100, LABCOLOR_BLACK);
+		LabClear();
+		//DrawCircle(angle, 100, LABCOLOR_BLACK);
 		angle += 0.05;
 		DrawCircle(angle, 100, LABCOLOR_GREEN);
 		Sleep(16);

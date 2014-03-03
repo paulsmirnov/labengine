@@ -107,6 +107,21 @@ int LabGetWidth(void);
  */
 int LabGetHeight(void);
 
+/**
+ * @brief Очистка экрана черным цветом.
+ * 
+ * @see LabClearWith
+ */
+void LabClear();
+
+/**
+ * @brief Очистка экрана заданным цветом.
+ * 
+ * @param color цвет, которым проливается экран
+ * @see LabClear
+ */
+void LabClearWith(labcolor_t color);
+
 /** 
  * @brief Рисование линии.
  *

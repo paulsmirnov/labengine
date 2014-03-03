@@ -234,7 +234,7 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
 		hdc = BeginPaint(hwnd, &ps);
 		if (hdc)
 		{
-			if (IsRectEmpty(&s_globals.updateRect))
+			//if (IsRectEmpty(&s_globals.updateRect))
 				CopyRect(&s_globals.updateRect, &ps.rcPaint);
 			res = BitBlt(hdc,
 				s_globals.updateRect.left, s_globals.updateRect.top,
@@ -829,6 +829,38 @@ int LabGetWidth(void)
 int LabGetHeight(void)
 {
   return s_globals.height;
+}
+
+/**
+ * @brief Clears window with black color.
+ * 
+ * @see LabClearWith
+ */
+void LabClear()
+{
+   LabClearWith(LABCOLOR_BLACK);
+}
+
+/**
+ * @brief Clears window with specified color.
+ * 
+ * @param color clear color
+ * @see LabClear
+ */
+void LabClearWith(labcolor_t color)
+{
+  HBRUSH colorBrush = CreateSolidBrush(RGB(s_globals.colors[color].r, s_globals.colors[color].g, s_globals.colors[color].b));
+  RECT screenRect;
+  SetRect(&screenRect, 0, 0, LabGetWidth(), LabGetHeight());
+
+  EnterCriticalSection(&s_globals.cs);
+  {
+    //UnionRect(&s_globals.updateRect, &s_globals.updateRect, &screenRect);
+    FillRect(s_globals.hbmdc, &screenRect, colorBrush);
+    LeaveCriticalSection(&s_globals.cs);
+  }
+
+  DeleteObject(colorBrush);
 }
 
 
