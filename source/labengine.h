@@ -204,6 +204,9 @@ void LabSetColor(labcolor_t color);
  * @return целое число - номер текущего цвета.
  */
 labcolor_t LabGetColor(void);
+
+void LabDrawFlush(void);
+
 /**@}*/
 
 

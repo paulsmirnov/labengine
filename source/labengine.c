@@ -424,7 +424,7 @@ void LabDrawLine(int x1, int y1,  int x2, int y2)
     MoveToEx(s_globals.hbmdc, x1, y1, NULL);
     LineTo(s_globals.hbmdc, x2, y2);
     UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
-    InvalidateRect(s_globals.hwnd, NULL, FALSE);
+    //InvalidateRect(s_globals.hwnd, NULL, FALSE);
     LeaveCriticalSection(&s_globals.cs);
   }
 }
@@ -449,7 +449,7 @@ void LabDrawPoint(int x, int y)
   {
     SetPixel(s_globals.hbmdc, x, y, RGB(color.r, color.g, color.b)); // draw point in current color
     UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
-    InvalidateRect(s_globals.hwnd, NULL, FALSE);
+    //InvalidateRect(s_globals.hwnd, NULL, FALSE);
     LeaveCriticalSection(&s_globals.cs);
   }
 }
@@ -475,7 +475,7 @@ void LabDrawCircle(int x, int y,  int radius)
     SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled circle
     Ellipse(s_globals.hbmdc, x - radius, y - radius, x + radius, y + radius); 
     UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
-    InvalidateRect(s_globals.hwnd, NULL, FALSE);
+    //InvalidateRect(s_globals.hwnd, NULL, FALSE);
     LeaveCriticalSection(&s_globals.cs);
   }
 }
@@ -502,7 +502,7 @@ void LabDrawEllipse(int x, int y,  int a, int b)
     SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled ellipse
     Ellipse(s_globals.hbmdc, x - a, y - b, x + a, y + b); 
     UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
-    InvalidateRect(s_globals.hwnd, NULL, FALSE); // Если тут не NULL, а положенный &r, то обновляется медленно при удерживании клавиши.
+    //InvalidateRect(s_globals.hwnd, NULL, FALSE); // Если тут не NULL, а положенный &r, то обновляется медленно при удерживании клавиши.
     LeaveCriticalSection(&s_globals.cs);
   }
 }
@@ -529,12 +529,12 @@ void LabDrawRectangle(int x1, int y1,  int x2, int y2)
     SelectObject(s_globals.hbmdc, GetStockObject(NULL_BRUSH)); // not filled rectangle
     Rectangle(s_globals.hbmdc, r.left, r.top, r.right, r.bottom);
     UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
-    InvalidateRect(s_globals.hwnd, NULL, FALSE);
+    //InvalidateRect(s_globals.hwnd, NULL, FALSE);
     LeaveCriticalSection(&s_globals.cs);
   }
 }
 
-void LabDrawForceUpdate(void)
+void LabDrawFlush(void)
 {
   InvalidateRect(s_globals.hwnd, NULL, FALSE);
   UpdateWindow(s_globals.hwnd);

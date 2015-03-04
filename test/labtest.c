@@ -49,9 +49,10 @@ void RunPoly(void)
 	while (!LabInputKeyReady())
 	{
 		LabClear();
-		angle += 0.05;
+		angle += 0.0001;
 		DrawCircle(angle, 100, LABCOLOR_GREEN);
-		LabDelay(20);
+//		LabDelay(20);
+		LabDrawFlush();
 	}
 
 	LabInputKey();
