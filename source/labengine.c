@@ -766,8 +766,12 @@ labbool_t LabInit(void)
   if ((!s_globals.hwnd) || (res == WAIT_FAILED))
     goto on_error;
 
-  // success
+  // successfully initialized
   s_globals.init = LAB_TRUE;
+
+  // set defaults now
+  LabSetColor(LABCOLOR_WHITE);
+
   return LAB_TRUE;
 
 on_error:
