@@ -30,19 +30,6 @@ typedef struct lab_queue
 } lab_queue;
 
 /**
- * structure for colors identification
- */
-typedef struct lab_rgb
-{
-  /// red component
-  int r;
-  /// green
-  int g;
-  /// blue
-  int b;
-} lab_rgb;
-
-/**
  * structure which contains information about threads, window and other objects
  */
 typedef struct lab_globals
@@ -74,9 +61,11 @@ typedef struct lab_globals
   /// semaphore object used to provide sinchronization in input system
   HANDLE ghSemaphore;
   /// array of colors (array of rgb)
-  lab_rgb colors[LABCOLOR_COUNT];
+  COLORREF colors[LABCOLOR_COUNT];
   /// current pen color
-  int penColor;
+  labcolor_t penColor;
+  /// current rgb pen color
+  COLORREF penColorRGB;
   /// update area
   RECT updateRect;
 } lab_globals;
@@ -96,23 +85,23 @@ static lab_queue key_queue = {
   0,            // key[]
 };
 
-static lab_rgb s_default_colors[] = {
-	{   0,   0,   0}, // LABCOLOR_BLACK,
-	{   0,   0, 128}, // LABCOLOR_DARK_BLUE,
-	{   0, 128,   0}, // LABCOLOR_DARK_GREEN,
-	{   0, 128, 255}, // LABCOLOR_DARK_CYAN,
-	{ 128,   0,   0}, // LABCOLOR_DARK_RED,
-	{ 128,   0, 128}, // LABCOLOR_DARK_MAGENTA,
-	{ 128,  64,   0}, // LABCOLOR_BROWN,
-	{ 192, 192, 192}, // LABCOLOR_LIGHT_GREY,
-	{ 128, 128, 128}, // LABCOLOR_DARK_GREY,
-	{   0,   0, 255}, // LABCOLOR_BLUE,
-	{   0, 255,   0}, // LABCOLOR_GREEN,
-	{   0, 255, 255}, // LABCOLOR_CYAN,
-	{ 255,   0,   0}, // LABCOLOR_RED,
-	{ 255,   0, 255}, // LABCOLOR_MAGENTA,
-	{ 255, 255,   0}, // LABCOLOR_YELLOW,
-	{ 255, 255, 255}, // LABCOLOR_WHITE,
+static COLORREF s_default_colors[] = {
+	RGB(   0,   0,   0), // LABCOLOR_BLACK,
+	RGB(   0,   0, 128), // LABCOLOR_DARK_BLUE,
+	RGB(   0, 128,   0), // LABCOLOR_DARK_GREEN,
+	RGB(   0, 128, 255), // LABCOLOR_DARK_CYAN,
+	RGB( 128,   0,   0), // LABCOLOR_DARK_RED,
+	RGB( 128,   0, 128), // LABCOLOR_DARK_MAGENTA,
+	RGB( 128,  64,   0), // LABCOLOR_BROWN,
+	RGB( 192, 192, 192), // LABCOLOR_LIGHT_GREY,
+	RGB( 128, 128, 128), // LABCOLOR_DARK_GREY,
+	RGB(   0,   0, 255), // LABCOLOR_BLUE,
+	RGB(   0, 255,   0), // LABCOLOR_GREEN,
+	RGB(   0, 255, 255), // LABCOLOR_CYAN,
+	RGB( 255,   0,   0), // LABCOLOR_RED,
+	RGB( 255,   0, 255), // LABCOLOR_MAGENTA,
+	RGB( 255, 255,   0), // LABCOLOR_YELLOW,
+	RGB( 255, 255, 255), // LABCOLOR_WHITE,
 };
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Error report
@@ -387,9 +376,18 @@ void _labInitColors(void)
  */
 void LabSetColor(labcolor_t color)
 {
-    s_globals.penColor = color;
-    SelectObject(s_globals.hbmdc, GetStockObject(DC_PEN));
-    SetDCPenColor(s_globals.hbmdc, RGB(s_globals.colors[color].r, s_globals.colors[color].g, s_globals.colors[color].b));
+  s_globals.penColor = color;
+  s_globals.penColorRGB = s_globals.colors[color];
+  SelectObject(s_globals.hbmdc, GetStockObject(DC_PEN));
+  SetDCPenColor(s_globals.hbmdc, s_globals.penColorRGB);
+}
+
+void LabSetColorRGB(int r, int g, int b)
+{
+  s_globals.penColor = LABCOLOR_NA;
+  s_globals.penColorRGB = RGB(r & 0xFF, g & 0xFF, b & 0xFF);
+  SelectObject(s_globals.hbmdc, GetStockObject(DC_PEN));
+  SetDCPenColor(s_globals.hbmdc, s_globals.penColorRGB);
 }
 
 /** 
@@ -438,7 +436,6 @@ void LabDrawLine(int x1, int y1,  int x2, int y2)
 void LabDrawPoint(int x, int y)
 {
   RECT r;
-  lab_rgb color = s_globals.colors[s_globals.penColor];
   // define region to redraw
   r.left   = x;
   r.right  = x + 1;
@@ -447,7 +444,7 @@ void LabDrawPoint(int x, int y)
 //  if (TryEnterCriticalSection(&s_globals.cs))
   EnterCriticalSection(&s_globals.cs);
   {
-    SetPixel(s_globals.hbmdc, x, y, RGB(color.r, color.g, color.b)); // draw point in current color
+    SetPixel(s_globals.hbmdc, x, y, s_globals.penColorRGB); // draw point in current color
     UnionRect(&s_globals.updateRect, &s_globals.updateRect, &r);
     //InvalidateRect(s_globals.hwnd, NULL, FALSE);
     LeaveCriticalSection(&s_globals.cs);
@@ -859,7 +856,7 @@ void LabClear()
  */
 void LabClearWith(labcolor_t color)
 {
-  HBRUSH colorBrush = CreateSolidBrush(RGB(s_globals.colors[color].r, s_globals.colors[color].g, s_globals.colors[color].b));
+  HBRUSH colorBrush = CreateSolidBrush(s_globals.colors[color]);
   RECT screenRect;
   SetRect(&screenRect, 0, 0, LabGetWidth(), LabGetHeight());
 

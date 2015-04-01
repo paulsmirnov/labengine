@@ -58,11 +58,32 @@ void RunPoly(void)
 	LabInputKey();
 }
 
+void RunTruecolor(void)
+{
+	int x, y, w, h, b, r, f;
+
+	LabClear();
+
+	for (y = 0, h = LabGetHeight(); y < h; y++) {
+		for (x = 0, w = LabGetWidth(); x < w; x++) {
+			b = x < 256 ? x : x < 512 ? 255 : 0;
+			r = x < 256 ? 0 : x < 512 ? x - 256 : 0;
+			f = x < 512 ? 0 : x - 512;
+			LabSetColorRGB(r, r, b);
+			LabDrawPoint(x, y);
+		}
+	}
+
+	LabDrawFlush();
+	LabInputKey();
+}
+
 int main(void)
 {
 	if (LabInit())
 	{
-		RunPoly();
+		// RunPoly();
+		RunTruecolor();
 		LabTerm();
 	}
 }

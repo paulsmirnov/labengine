@@ -81,6 +81,8 @@ void LabDelay(int time);
  */
 typedef enum labcolor_t 
 { 
+  LABCOLOR_NA = -1,       ///< Цвет неопределён
+
   LABCOLOR_BLACK,         ///< Чёрный
   LABCOLOR_DARK_BLUE,     ///< Тёмно-синий
   LABCOLOR_DARK_GREEN,    ///< Тёмно-зелёный
@@ -98,7 +100,7 @@ typedef enum labcolor_t
   LABCOLOR_YELLOW,        ///< Жёлтый
   LABCOLOR_WHITE,         ///< Белый
 
-  LABCOLOR_COUNT          ///< Количество цветов в палитре
+  LABCOLOR_COUNT,         ///< Количество цветов в палитре
 } labcolor_t;
 
 /**
@@ -145,9 +147,30 @@ void LabClearWith(labcolor_t color);
  * (@ref LABCOLOR_WHITE).
  *
  * @param color новый цвет из перечисления <code>labcolor_t</code>.
- * @see labcolor_t
+ * @see labcolor_t, LabSetColorRGB()
  */
 void LabSetColor(labcolor_t color);
+
+/** 
+ * @brief Установить текущий цвет по компонентам.
+ *
+ * Позволяет выбрать один из 16,777,216 цветов в качестве текущего,
+ * используемого для последующего рисования графических объектов
+ * функциями <code>LabDraw...()</code>. Стандартная палитра при этом
+ * игнорируется, цвет составляется как комбинация яркостей отдельных
+ * компонент (каналов) - красной, зелёной и синей, в пределах от
+ * 0 (отсутствие компонены) до 255 (максимальная яркость компоненты).
+ *
+ * Поскольку выбранный цвет не обязательно принадлежит стандартной
+ * палитре, функция LabGetColor() будет возвращать @ref LABCOLOR_NA.
+ *
+ * @param r яркость красной компоненты, от 0 до 255.
+ * @param g яркость зелёной компоненты, от 0 до 255.
+ * @param b яркость синей компоненты, от 0 до 255.
+ *
+ * @see LabSetColor
+ */
+void LabSetColorRGB(int r, int g, int b);
 
 /** 
  * @brief Узнать текущий цвет.
