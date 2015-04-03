@@ -12,6 +12,9 @@
 #define BUFFER_SIZE 32 /// size of queue for keyboard buffer (31 + 1)
 #define MAX_SEM_COUNT BUFFER_SIZE /// max semaphore object count
 
+#define LABASSERT(e)      _ASSERTE(e)
+#define LABASSERT_INIT()  LABASSERT("LabInit() should be called first!" && s_globals.init);
+
 #ifdef _DEBUG 
 #define LAB_ENABLE_REPORT
 #endif
@@ -336,6 +339,7 @@ static LRESULT _onKeydown(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _I
  */
 int LabInputKey(void)
 {
+  LABASSERT_INIT();
   // waits until key pressed in another thread and decreases semaphore object
   WaitForSingleObject(s_globals.ghSemaphore, INFINITE); 
 //  InvalidateRect(s_globals.hwnd, NULL, FALSE);
@@ -351,6 +355,7 @@ int LabInputKey(void)
  */
 labbool_t LabInputKeyReady(void)
 {
+  LABASSERT_INIT();
   return (_labEmptyQue() == LAB_FALSE) ? LAB_TRUE : LAB_FALSE;
 }
 
@@ -376,6 +381,7 @@ void _labInitColors(void)
  */
 void LabSetColor(labcolor_t color)
 {
+  LABASSERT_INIT();
   s_globals.penColor = color;
   s_globals.penColorRGB = s_globals.colors[color];
   SelectObject(s_globals.hbmdc, GetStockObject(DC_PEN));
@@ -384,6 +390,7 @@ void LabSetColor(labcolor_t color)
 
 void LabSetColorRGB(int r, int g, int b)
 {
+  LABASSERT_INIT();
   s_globals.penColor = LABCOLOR_NA;
   s_globals.penColorRGB = RGB(r & 0xFF, g & 0xFF, b & 0xFF);
   SelectObject(s_globals.hbmdc, GetStockObject(DC_PEN));
@@ -397,6 +404,7 @@ void LabSetColorRGB(int r, int g, int b)
  */
 int LabGetColor(void)
 {
+  LABASSERT_INIT();
   return s_globals.penColor;
 }
 
@@ -411,6 +419,9 @@ int LabGetColor(void)
 void LabDrawLine(int x1, int y1,  int x2, int y2)
 {
   RECT r;
+
+  LABASSERT_INIT();
+
   // define region to redraw
   r.left   = x1 <= x2 ? x1 : x2 + 1;
   r.right  = x1 <  x2 ? x2 : x1 + 1;
@@ -436,6 +447,9 @@ void LabDrawLine(int x1, int y1,  int x2, int y2)
 void LabDrawPoint(int x, int y)
 {
   RECT r;
+
+  LABASSERT_INIT();
+
   // define region to redraw
   r.left   = x;
   r.right  = x + 1;
@@ -461,6 +475,9 @@ void LabDrawPoint(int x, int y)
 void LabDrawCircle(int x, int y,  int radius)
 {
   RECT r;
+
+  LABASSERT_INIT();
+
   // define region to redraw
   r.left   = x - radius;
   r.right  = x + radius + 1;
@@ -488,6 +505,9 @@ void LabDrawCircle(int x, int y,  int radius)
 void LabDrawEllipse(int x, int y,  int a, int b)
 {
   RECT r;
+
+  LABASSERT_INIT();
+
   // define region to redraw
   r.left   = x - a;
   r.right  = x + a + 1;
@@ -515,6 +535,9 @@ void LabDrawEllipse(int x, int y,  int a, int b)
 void LabDrawRectangle(int x1, int y1,  int x2, int y2)
 {
   RECT r;
+
+  LABASSERT_INIT();
+
   // define region to redraw
   r.left   = x1 < x2 ? x1 : x2;
   r.right  = x1 < x2 ? x2 : x1;
@@ -533,6 +556,7 @@ void LabDrawRectangle(int x1, int y1,  int x2, int y2)
 
 void LabDrawFlush(void)
 {
+  LABASSERT_INIT();
   InvalidateRect(s_globals.hwnd, NULL, FALSE);
   UpdateWindow(s_globals.hwnd);
 }
@@ -732,6 +756,7 @@ labbool_t LabInit(void)
   LPTHREAD_START_ROUTINE lpStartAddress = NULL;
 
   // do not initialize twice
+  LABASSERT(!s_globals.init);
   if (s_globals.init)
     return LAB_FALSE;
 
@@ -809,7 +834,8 @@ void LabTerm(void)
 
 void LabDelay(int time)
 {
-   Sleep(time);
+  LABASSERT_INIT();
+  Sleep(time);
 }
 
 
@@ -822,6 +848,7 @@ void LabDelay(int time)
  */
 int LabGetWidth(void)
 {
+  LABASSERT_INIT();
   return s_globals.width;
 }
 
@@ -835,6 +862,7 @@ int LabGetWidth(void)
  */
 int LabGetHeight(void)
 {
+  LABASSERT_INIT();
   return s_globals.height;
 }
 
@@ -845,7 +873,8 @@ int LabGetHeight(void)
  */
 void LabClear()
 {
-   LabClearWith(LABCOLOR_BLACK);
+  LABASSERT_INIT();
+  LabClearWith(LABCOLOR_BLACK);
 }
 
 /**
@@ -856,8 +885,10 @@ void LabClear()
  */
 void LabClearWith(labcolor_t color)
 {
-  HBRUSH colorBrush = CreateSolidBrush(s_globals.colors[color]);
+  HBRUSH colorBrush = CreateSolidBrush(s_globals.colors[color]); // todo: why not SetDCBrushColor()? [4/3/2015 paul.smirnov]
   RECT screenRect;
+
+  LABASSERT_INIT();
   SetRect(&screenRect, 0, 0, LabGetWidth(), LabGetHeight());
 
   EnterCriticalSection(&s_globals.cs);
