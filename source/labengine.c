@@ -1,7 +1,3 @@
-/** @file labengine.c
- * LabEngine library implementation.
- */
-
 #include "labengine.h"
 
 #include <windows.h>
@@ -19,63 +15,44 @@
 #define LAB_ENABLE_REPORT
 #endif
 
-/**
- * structure for keyboard buffer implementation
- */
-typedef struct lab_queue
+typedef struct labkeyqueue_t
 {
-  /// index of first element in queue
-  int start;
-  /// index next to the last element in queue
-  int end;
-  /// circular queue
-  int key[BUFFER_SIZE];
-} lab_queue;
+  int start; // index of first element in queue
+  int end;   // index next to the last element in queue
+  int key[BUFFER_SIZE]; // circular queue
+} labkeyqueue_t;
 
-/**
- * structure which contains information about threads, window and other objects
- */
-typedef struct lab_globals
+typedef struct labglobals_t
 {
-  /// if value is LAB_TRUE, graphics mode has already been initialized
-  labbool_t init;
-  /// receives the thread identifier when thread creates in <code>CreateThread()</code> function
-  DWORD threadId;
-  /// handle to a new thread - return value of <code>CreateThread()</code> function
-  HANDLE thread;
-  /// event used to synchronize with the main thread
-  HANDLE syncEvent;
-  /// handle to a window
-  HWND hwnd;
-  /// if value is LAB_TRUE, window will be destroyed and graphics mode will be closed
-  labbool_t quit;
-  /// width of window
-  LONG width;
-  /// height of window
-  LONG height;
-  /// scale factor for buffer output
-  DWORD scale;
-  /// a handle to a bitmap used to draw
-  HBITMAP hbm;
-  /// a handle to device context of hbm
-  HDC hbmdc;
-  /// a handle to a region to be updated after drawing
-  HRGN hrgn;
-  /// critical section object used to provide sinchronization in graphics
-  CRITICAL_SECTION cs;
-  /// semaphore object used to provide sinchronization in input system
-  HANDLE ghSemaphore;
-  /// array of colors (array of rgb)
-  COLORREF colors[LABCOLOR_COUNT];
-  /// current pen color
-  labcolor_t penColor;
-  /// current rgb pen color
-  COLORREF penColorRGB;
-  /// update area
-  RECT updateRect;
-} lab_globals;
+  labbool_t init;       // if value is LAB_TRUE, graphics mode has already been initialized
 
-static lab_globals s_globals = {
+  DWORD threadId;       // receives the thread identifier when thread creates in <code>CreateThread()</code> function
+  HANDLE thread;        // handle to a new thread - return value of <code>CreateThread()</code> function
+  HANDLE syncEvent;     // event used to synchronize with the main thread
+
+  HWND hwnd;            // handle to a window
+
+  labbool_t quit;       // if value is LAB_TRUE, window will be destroyed and graphics mode will be closed
+
+  LONG width;           // width of window
+  LONG height;          // height of window
+  DWORD scale;          // scale factor for buffer output
+
+  HBITMAP hbm;          // a handle to a bitmap used to draw
+  HDC hbmdc;            // a handle to device context of hbm
+  HRGN hrgn;            // a handle to a region to be updated after drawing
+  
+  CRITICAL_SECTION cs;  // critical section object used to provide sinchronization in graphics
+  HANDLE ghSemaphore;   // semaphore object used to provide sinchronization in input system
+
+  COLORREF colors[LABCOLOR_COUNT];  // array of colors (array of rgb)
+  labcolor_t penColor;  // current pen color
+  COLORREF penColorRGB; // current rgb pen color
+
+  RECT updateRect;      // update area
+} labglobals_t;
+
+static labglobals_t s_globals = {
   LAB_FALSE,    // init
   ~0,           // threadId
   NULL,         // thread
@@ -84,29 +61,25 @@ static lab_globals s_globals = {
   LAB_FALSE,    // quit
 };
 
-static lab_queue key_queue = {
-  0,            // start
-  0,            // end
-  0,            // key[]
-};
+static labkeyqueue_t s_keyQueue;
 
-static COLORREF s_default_colors[] = {
-	RGB(   0,   0,   0), // LABCOLOR_BLACK,
-	RGB(   0,   0, 128), // LABCOLOR_DARK_BLUE,
-	RGB(   0, 128,   0), // LABCOLOR_DARK_GREEN,
-	RGB(   0, 128, 255), // LABCOLOR_DARK_CYAN,
-	RGB( 128,   0,   0), // LABCOLOR_DARK_RED,
-	RGB( 128,   0, 128), // LABCOLOR_DARK_MAGENTA,
-	RGB( 128,  64,   0), // LABCOLOR_BROWN,
-	RGB( 192, 192, 192), // LABCOLOR_LIGHT_GREY,
-	RGB( 128, 128, 128), // LABCOLOR_DARK_GREY,
-	RGB(   0,   0, 255), // LABCOLOR_BLUE,
-	RGB(   0, 255,   0), // LABCOLOR_GREEN,
-	RGB(   0, 255, 255), // LABCOLOR_CYAN,
-	RGB( 255,   0,   0), // LABCOLOR_RED,
-	RGB( 255,   0, 255), // LABCOLOR_MAGENTA,
-	RGB( 255, 255,   0), // LABCOLOR_YELLOW,
-	RGB( 255, 255, 255), // LABCOLOR_WHITE,
+static COLORREF s_defaultColors[] = {
+  RGB(   0,   0,   0), // LABCOLOR_BLACK,
+  RGB(   0,   0, 128), // LABCOLOR_DARK_BLUE,
+  RGB(   0, 128,   0), // LABCOLOR_DARK_GREEN,
+  RGB(   0, 128, 255), // LABCOLOR_DARK_CYAN,
+  RGB( 128,   0,   0), // LABCOLOR_DARK_RED,
+  RGB( 128,   0, 128), // LABCOLOR_DARK_MAGENTA,
+  RGB( 128,  64,   0), // LABCOLOR_BROWN,
+  RGB( 192, 192, 192), // LABCOLOR_LIGHT_GREY,
+  RGB( 128, 128, 128), // LABCOLOR_DARK_GREY,
+  RGB(   0,   0, 255), // LABCOLOR_BLUE,
+  RGB(   0, 255,   0), // LABCOLOR_GREEN,
+  RGB(   0, 255, 255), // LABCOLOR_CYAN,
+  RGB( 255,   0,   0), // LABCOLOR_RED,
+  RGB( 255,   0, 255), // LABCOLOR_MAGENTA,
+  RGB( 255, 255,   0), // LABCOLOR_YELLOW,
+  RGB( 255, 255, 255), // LABCOLOR_WHITE,
 };
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -122,21 +95,14 @@ static __inline int _labGetWindowHeight(void);
 
 void _labReportError()
 {
-  #ifdef LAB_ENABLE_REPORT
+#ifdef LAB_ENABLE_REPORT
 
   LPVOID lpMsgBuf;
   LPVOID lpDisplayBuf;
   DWORD dw = GetLastError(); 
 
-  FormatMessage(
-      FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-      FORMAT_MESSAGE_FROM_SYSTEM |
-      FORMAT_MESSAGE_IGNORE_INSERTS,
-      NULL,
-      dw,
-      MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-      (LPTSTR) &lpMsgBuf,
-      0, NULL );
+  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    NULL, dw, MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT), (LPTSTR) &lpMsgBuf, 0, NULL );
 
   // Display the error message and exit the process
   if (dw != 0)
@@ -157,47 +123,47 @@ void _labReportError()
 //   Queue functionality
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-labbool_t _labFullQue(void)
+labbool_t _labInputQueueFull(void)
 {
-  return ((key_queue.start == key_queue.end + 1) || (key_queue.end - key_queue.start == BUFFER_SIZE - 1)) ? LAB_TRUE : LAB_FALSE;
+  return ((s_keyQueue.start == s_keyQueue.end + 1) || (s_keyQueue.end - s_keyQueue.start == BUFFER_SIZE - 1)) ? LAB_TRUE : LAB_FALSE;
 }
 
-labbool_t _labEmptyQue(void)
+labbool_t _labInputQueueEmpty(void)
 {
-  return (key_queue.start == key_queue.end) ? LAB_TRUE : LAB_FALSE;
+  return (s_keyQueue.start == s_keyQueue.end) ? LAB_TRUE : LAB_FALSE;
 }
 
-labbool_t _labPush(int c)
+labbool_t _labInputKeyPush(int c)
 {
-  if (!_labFullQue())
+  if (!_labInputQueueFull())
   {
-    key_queue.key[key_queue.end] = c;
+    s_keyQueue.key[s_keyQueue.end] = c;
     // make it circular
-    if (key_queue.end + 1 == BUFFER_SIZE)
-      key_queue.end = 0;
+    if (s_keyQueue.end + 1 == BUFFER_SIZE)
+      s_keyQueue.end = 0;
     else
-      key_queue.end++;
+      s_keyQueue.end++;
   }
   else
     MessageBeep(0xFFFFFFFF); // if queue is full, don't add element, just beep
   if (!ReleaseSemaphore(s_globals.ghSemaphore, 1, NULL)) // increase semaphore oblect value by one
     _labReportError();
-  return _labFullQue();
+  return !_labInputQueueFull();
 }
 
-int _labPop(void)
+int _labInputKeyPop(void)
 {
   int key;
-  if (!_labEmptyQue())
+  if (!_labInputQueueEmpty())
   {
-    key = key_queue.key[key_queue.start];
+    key = s_keyQueue.key[s_keyQueue.start];
     // pop elemnt
-    key_queue.key[key_queue.start] = 0;
+    s_keyQueue.key[s_keyQueue.start] = 0;
     // make it circular
-    if (key_queue.start + 1 == BUFFER_SIZE)
-      key_queue.start = 0;
+    if (s_keyQueue.start + 1 == BUFFER_SIZE)
+      s_keyQueue.start = 0;
     else
-      key_queue.start++;
+      s_keyQueue.start++;
     return key;
   }
   return 0; // if element was not deleted (queue was empty)
@@ -227,46 +193,46 @@ static LRESULT _onDestroy(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _I
 
 static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
-	PAINTSTRUCT ps;
-	HDC hdc;
-	DWORD res;
+  PAINTSTRUCT ps;
+  HDC hdc;
+  DWORD res;
   RECT srcRect, dstRect;
 
-	EnterCriticalSection(&s_globals.cs);
-//	if (TryEnterCriticalSection(&s_globals.cs))
-	{
-		hdc = BeginPaint(hwnd, &ps);
-		if (hdc)
-		{
-			//if (IsRectEmpty(&s_globals.updateRect))
-				CopyRect(&dstRect, &ps.rcPaint);
-        if (s_globals.scale == 1)
-        {
-          res = BitBlt(hdc, dstRect.left, dstRect.top, dstRect.right, dstRect.bottom,
-            s_globals.hbmdc, dstRect.left, dstRect.top, SRCCOPY);
-        }
-        else
-        {
-          // find source rectangle
-          srcRect.left = dstRect.left / s_globals.scale;
-          srcRect.right = (dstRect.right + s_globals.scale - 1) / s_globals.scale;
-          srcRect.top = dstRect.top / s_globals.scale;
-          srcRect.bottom = (dstRect.bottom + s_globals.scale - 1) / s_globals.scale;
+  EnterCriticalSection(&s_globals.cs);
+  //	if (TryEnterCriticalSection(&s_globals.cs))
+  {
+    hdc = BeginPaint(hwnd, &ps);
+    if (hdc)
+    {
+      //if (IsRectEmpty(&s_globals.updateRect))
+      CopyRect(&dstRect, &ps.rcPaint);
+      if (s_globals.scale == 1)
+      {
+        res = BitBlt(hdc, dstRect.left, dstRect.top, dstRect.right, dstRect.bottom,
+          s_globals.hbmdc, dstRect.left, dstRect.top, SRCCOPY);
+      }
+      else
+      {
+        // find source rectangle
+        srcRect.left = dstRect.left / s_globals.scale;
+        srcRect.right = (dstRect.right + s_globals.scale - 1) / s_globals.scale;
+        srcRect.top = dstRect.top / s_globals.scale;
+        srcRect.bottom = (dstRect.bottom + s_globals.scale - 1) / s_globals.scale;
 
-          // corresponding screen rectangle (rounded up)
-          dstRect.left = srcRect.left * s_globals.scale;
-          dstRect.right = srcRect.right * s_globals.scale;
-          dstRect.top = srcRect.top * s_globals.scale;
-          dstRect.bottom = srcRect.bottom * s_globals.scale;
+        // corresponding screen rectangle (rounded up)
+        dstRect.left = srcRect.left * s_globals.scale;
+        dstRect.right = srcRect.right * s_globals.scale;
+        dstRect.top = srcRect.top * s_globals.scale;
+        dstRect.bottom = srcRect.bottom * s_globals.scale;
 
-          res = StretchBlt(hdc, dstRect.left, dstRect.top, dstRect.right, dstRect.bottom,
-            s_globals.hbmdc, srcRect.left, srcRect.top, srcRect.right, srcRect.bottom, SRCCOPY);
-        }
-			if (!res)
-				_labReportError();
-			SetRectEmpty(&s_globals.updateRect);
-		}
-		LeaveCriticalSection(&s_globals.cs);
+        res = StretchBlt(hdc, dstRect.left, dstRect.top, dstRect.right, dstRect.bottom,
+          s_globals.hbmdc, srcRect.left, srcRect.top, srcRect.right, srcRect.bottom, SRCCOPY);
+      }
+      if (!res)
+        _labReportError();
+      SetRectEmpty(&s_globals.updateRect);
+    }
+    LeaveCriticalSection(&s_globals.cs);
   }
   EndPaint(hwnd, &ps);
   return 0;
@@ -282,33 +248,33 @@ static LRESULT _onChar(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ 
   // special codes for these keys
   switch (wParam)  
   {
-    case VK_RETURN: // ENTER key
-      code = LABKEY_ENTER;
-		  break;
+  case VK_RETURN: // ENTER key
+    code = LABKEY_ENTER;
+    break;
 
-    case VK_ESCAPE:
-      code = LABKEY_ESC;
-		  break;
-    
-    case VK_BACK:
-      code = LABKEY_BACK;
-		  break;
+  case VK_ESCAPE:
+    code = LABKEY_ESC;
+    break;
 
-    case VK_TAB:
-      code = LABKEY_TAB;
-		  break;
+  case VK_BACK:
+    code = LABKEY_BACK;
+    break;
 
-    default:
-      {
-        // button faces processing
-        code = wParam;
-        break;
-      }
+  case VK_TAB:
+    code = LABKEY_TAB;
+    break;
+
+  default:
+    {
+      // button faces processing
+      code = wParam;
+      break;
+    }
   }
 
-    for (i = 0; i < (mask & lParam); i++) // in lParam bits from 0 to 15 - the repeat count for the current message
-      if (_labPush(code)) // break if queue is full
-        break;
+  for (i = 0; i < (mask & lParam); i++) // repeat count for the current message
+    if (!_labInputKeyPush(code))
+      break;
   return 0;
 }
 
@@ -318,40 +284,39 @@ static LRESULT _onKeydown(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _I
   int i;
   int virtual_code;
   int mask = 0x0000FFFF; // 00..011..1
-  switch (wParam) {
 
-    case VK_LEFT:
-      virtual_code = LABKEY_LEFT;
-		  break;
+  switch (wParam)
+  {
+  case VK_LEFT:
+    virtual_code = LABKEY_LEFT;
+    break;
 
-		case VK_UP:
-      virtual_code = LABKEY_UP;
-		  break;
+  case VK_UP:
+    virtual_code = LABKEY_UP;
+    break;
 
-		case VK_RIGHT:
-      virtual_code = LABKEY_RIGHT;
-		  break;
+  case VK_RIGHT:
+    virtual_code = LABKEY_RIGHT;
+    break;
 
-		case VK_DOWN:
-      virtual_code = LABKEY_DOWN;
-		  break;
-    case VK_PRIOR: // PAGE UP key
-      virtual_code = LABKEY_PAGE_UP;
-		  break;
+  case VK_DOWN:
+    virtual_code = LABKEY_DOWN;
+    break;
+  case VK_PRIOR: // PAGE UP key
+    virtual_code = LABKEY_PAGE_UP;
+    break;
 
-		case VK_NEXT: // PAGE DOWN key
-      virtual_code = LABKEY_PAGE_DOWN;
-		  break;
+  case VK_NEXT: // PAGE DOWN key
+    virtual_code = LABKEY_PAGE_DOWN;
+    break;
 
-		default:
-		  return 0;
+  default:
+    return 0;
   }
 
   for (i = 0; i < (mask & lParam); i++)
-  {
-    if (_labPush(virtual_code))
+    if (!_labInputKeyPush(virtual_code))
       break;
-  }
   return 0;
 }
 
@@ -360,31 +325,19 @@ static LRESULT _onKeydown(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _I
 //   Input system
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** 
- * Waits until key pressed and push key pressed code to the keyboard buffer
- *
- * @return integer value - code of the key that was pressed
- */
 int LabInputKey(void)
 {
   LABASSERT_INIT();
   // waits until key pressed in another thread and decreases semaphore object
   WaitForSingleObject(s_globals.ghSemaphore, INFINITE); 
 //  InvalidateRect(s_globals.hwnd, NULL, FALSE);
-  return _labPop();
+  return _labInputKeyPop();
 }
 
-
-/** 
- * @brief Checks if there are any keys in the keyboard buffer
- *
- * Buffer is not empty means that it contains not processed by user who calls this function keystrokes
- * @return LAB_TRUE if buffer is not empty and keystroke is ready to be processed, else return value is LAB_FALSE
- */
 labbool_t LabInputKeyReady(void)
 {
   LABASSERT_INIT();
-  return (_labEmptyQue() == LAB_FALSE) ? LAB_TRUE : LAB_FALSE;
+  return (_labInputQueueEmpty() == LAB_FALSE) ? LAB_TRUE : LAB_FALSE;
 }
 
 
@@ -392,21 +345,13 @@ labbool_t LabInputKeyReady(void)
 //   Graphics
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** 
- * Initializes colors components (r, g, and b)
- */
 void _labInitColors(void)
 {
-	_STATIC_ASSERT(sizeof(s_default_colors) == sizeof(s_globals.colors));
-	_STATIC_ASSERT(sizeof(s_default_colors)/sizeof(s_default_colors[0]) == LABCOLOR_COUNT);
-	memcpy(s_globals.colors, s_default_colors, sizeof(s_globals.colors));
+  _STATIC_ASSERT(sizeof(s_defaultColors) == sizeof(s_globals.colors));
+  _STATIC_ASSERT(sizeof(s_defaultColors)/sizeof(s_defaultColors[0]) == LABCOLOR_COUNT);
+  memcpy(s_globals.colors, s_defaultColors, sizeof(s_globals.colors));
 }
 
-/** 
- * Sets new line color
- *
- * @param color new line color
- */
 void LabSetColor(labcolor_t color)
 {
   LABASSERT_INIT();
@@ -425,25 +370,12 @@ void LabSetColorRGB(int r, int g, int b)
   SetDCPenColor(s_globals.hbmdc, s_globals.penColorRGB);
 }
 
-/** 
- * Get current line color
- *
- * @retrun integer value - current color
- */
 int LabGetColor(void)
 {
   LABASSERT_INIT();
   return s_globals.penColor;
 }
 
-/** 
- * Draw line which joins point (x1, y1) and (x2, y2).
- *
- * @param x1 x-coordinate of first point
- * @param y1 y-coordinate of first point
- * @param x2 x-coordinate of second point
- * @param y2 y-coordinate of second point
- */
 void LabDrawLine(int x1, int y1,  int x2, int y2)
 {
   RECT r;
@@ -466,12 +398,6 @@ void LabDrawLine(int x1, int y1,  int x2, int y2)
   }
 }
 
-/** 
- * Draw point with coordinates (x, y)
- *
- * @param x x-coordinate of point
- * @param y y-coordinate of point
- */
 void LabDrawPoint(int x, int y)
 {
   RECT r;
@@ -493,13 +419,6 @@ void LabDrawPoint(int x, int y)
   }
 }
 
-/** 
- * Draw circle which center in (x, y) and radius radius.
- *
- * @param x x-coordinate of center
- * @param y y-coordinate of center
- * @param radius radius
- */
 void LabDrawCircle(int x, int y,  int radius)
 {
   RECT r;
@@ -522,14 +441,6 @@ void LabDrawCircle(int x, int y,  int radius)
   }
 }
 
-/** 
- * Draw ellipse which center in (x, y) and semiaxises a and b.
- *
- * @param x x-coordinate of center
- * @param y y-coordinate of center
- * @param a semi-major axis
- * @param b semi-minor axis
- */
 void LabDrawEllipse(int x, int y,  int a, int b)
 {
   RECT r;
@@ -552,14 +463,6 @@ void LabDrawEllipse(int x, int y,  int a, int b)
   }
 }
 
-/** 
- * Draw rectangle on upper-left corner with coordinate (x1, y1) and bottom-right (x2, y2).
- *
- * @param x1 x-coordinate of upper-left corner
- * @param y1 y-coordinate of upper-left corner
- * @param x2 x-coordinate of bottom-right corner
- * @param y2 y-coordinate of bottom-right corner
- */
 void LabDrawRectangle(int x1, int y1,  int x2, int y2)
 {
   RECT r;
@@ -836,13 +739,6 @@ on_error:
   return LAB_FALSE;
 }
 
-
-
-/**
- * @brief Terminates work with graphics
- * 
- * Requests the tread to terminate by closing the window and destroys the thread.
- */
 void LabTerm(void)
 {
   DWORD res;
@@ -872,14 +768,6 @@ void LabDelay(int time)
   Sleep(time);
 }
 
-
-/**
- * @brief Gets window width.
- * 
- * Takes current window width from structure lab_globals and returns token value.
- * @return an integer value - window width
- * @see LabGetHeight
- */
 int LabGetWidth(void)
 {
   LABASSERT_INIT();
@@ -891,13 +779,6 @@ static __inline int _labGetWindowWidth(void)
   return s_globals.width * s_globals.scale;
 }
 
-/**
- * @brief Gets window height.
- * 
- * Takes current window height from structure lab_globals and returns token value.
- * @return an integer value - window height
- * @see LabGetWidth
- */
 int LabGetHeight(void)
 {
   LABASSERT_INIT();
@@ -909,23 +790,12 @@ static __inline int _labGetWindowHeight(void)
   return s_globals.height * s_globals.scale;
 }
 
-/**
- * @brief Clears window with black color.
- * 
- * @see LabClearWith
- */
 void LabClear()
 {
   LABASSERT_INIT();
   LabClearWith(LABCOLOR_BLACK);
 }
 
-/**
- * @brief Clears window with specified color.
- * 
- * @param color clear color
- * @see LabClear
- */
 void LabClearWith(labcolor_t color)
 {
   HBRUSH colorBrush = CreateSolidBrush(s_globals.colors[color]); // todo: why not SetDCBrushColor()? [4/3/2015 paul.smirnov]
