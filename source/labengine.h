@@ -31,6 +31,18 @@ typedef enum labbool_t
  */
 
 /**
+ * Параметры инициализации библиотеки.
+ *
+ * Используются при вызове функции LabInitWith().
+ */
+typedef struct labparams_t
+{
+  unsigned width;  ///< ширина буфера для рисования
+  unsigned height; ///< высота буфера для рисования
+  unsigned scale;  ///< коэффициент масштабирования буфера при выводе на экран
+} labparams_t;
+
+/**
  * @brief Инициализировать библиотеку.
  * 
  * Необходим вызов перед работой с другими функциями библиотеки, то есть в графическом
@@ -38,9 +50,23 @@ typedef enum labbool_t
  * По окончании работы в графическом режиме необходим вызов LabTerm().
  * 
  * @return @ref LAB_TRUE если инициализация прошла успешно, иначе - @ref LAB_FALSE.
- * @see LabTerm
+ * @see LabInitWith, LabTerm
  */
 labbool_t LabInit(void);
+
+/**
+ * @brief Инициализировать библиотеку с параметрами.
+ *
+ * Необходим вызов перед работой с другими функциями библиотеки, то есть в графическом
+ * режиме. Создаётся окно для графики.
+ * По окончании работы в графическом режиме необходим вызов LabTerm().
+ *
+ * @param width params параметры инициализации библиотеки
+ *
+ * @return @ref LAB_TRUE если инициализация прошла успешно, иначе - @ref LAB_FALSE.
+ * @see LabInit, LabTerm
+ */
+labbool_t LabInitWith(labparams_t const* params);
 
 /**
  * @brief Завершить работу c библиотекой.
@@ -49,7 +75,7 @@ labbool_t LabInit(void);
  * окна графического режима.
  * Перед началом работы в графическом режиме необходим вызов LabInit().
  *
- * @see LabInit
+ * @see LabInit, LabInitWith
  */
 void LabTerm(void);
 

@@ -53,6 +53,8 @@ typedef struct lab_globals
   LONG width;
   /// height of window
   LONG height;
+  /// scale factor for buffer output
+  DWORD scale;
   /// a handle to a bitmap used to draw
   HBITMAP hbm;
   /// a handle to device context of hbm
@@ -106,6 +108,14 @@ static COLORREF s_default_colors[] = {
 	RGB( 255, 255,   0), // LABCOLOR_YELLOW,
 	RGB( 255, 255, 255), // LABCOLOR_WHITE,
 };
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//   Forward declarations
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static __inline int _labGetWindowWidth(void);
+static __inline int _labGetWindowHeight(void);
+
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //   Error report
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -220,6 +230,8 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
 	PAINTSTRUCT ps;
 	HDC hdc;
 	DWORD res;
+  RECT srcRect, dstRect;
+
 	EnterCriticalSection(&s_globals.cs);
 //	if (TryEnterCriticalSection(&s_globals.cs))
 	{
@@ -227,13 +239,29 @@ static LRESULT _onPaint(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_
 		if (hdc)
 		{
 			//if (IsRectEmpty(&s_globals.updateRect))
-				CopyRect(&s_globals.updateRect, &ps.rcPaint);
-			res = BitBlt(hdc,
-				s_globals.updateRect.left, s_globals.updateRect.top,
-				s_globals.updateRect.right, s_globals.updateRect.bottom,
-				s_globals.hbmdc,
-				s_globals.updateRect.left, s_globals.updateRect.top,
-				SRCCOPY);
+				CopyRect(&dstRect, &ps.rcPaint);
+        if (s_globals.scale == 1)
+        {
+          res = BitBlt(hdc, dstRect.left, dstRect.top, dstRect.right, dstRect.bottom,
+            s_globals.hbmdc, dstRect.left, dstRect.top, SRCCOPY);
+        }
+        else
+        {
+          // find source rectangle
+          srcRect.left = dstRect.left / s_globals.scale;
+          srcRect.right = (dstRect.right + s_globals.scale - 1) / s_globals.scale;
+          srcRect.top = dstRect.top / s_globals.scale;
+          srcRect.bottom = (dstRect.bottom + s_globals.scale - 1) / s_globals.scale;
+
+          // corresponding screen rectangle (rounded up)
+          dstRect.left = srcRect.left * s_globals.scale;
+          dstRect.right = srcRect.right * s_globals.scale;
+          dstRect.top = srcRect.top * s_globals.scale;
+          dstRect.bottom = srcRect.bottom * s_globals.scale;
+
+          res = StretchBlt(hdc, dstRect.left, dstRect.top, dstRect.right, dstRect.bottom,
+            s_globals.hbmdc, srcRect.left, srcRect.top, srcRect.right, srcRect.bottom, SRCCOPY);
+        }
 			if (!res)
 				_labReportError();
 			SetRectEmpty(&s_globals.updateRect);
@@ -597,7 +625,7 @@ static HWND _labCreateWindow(void)
   static LPCTSTR MY_WINDOW_NAME = TEXT("Lab Graphics");
   WNDCLASSEX wcex;
   HWND hwnd = NULL;
-  RECT rc = {0, 0, s_globals.width, s_globals.height};
+  RECT rc = {0, 0, _labGetWindowWidth(), _labGetWindowHeight()};
   DWORD style = (WS_OVERLAPPEDWINDOW  & ~WS_THICKFRAME  & ~WS_MAXIMIZEBOX) | WS_VISIBLE; /*disable maximize and sising button*/
   HINSTANCE hInstance = GetModuleHandle(0);
 
@@ -636,7 +664,7 @@ static HWND _labCreateWindow(void)
 static DWORD WINAPI _labThreadProc(_In_ LPVOID lpParameter)
 {
   HDC hdc;
-  RECT rect = {0, 0, s_globals.width, s_globals.height};
+  RECT rect = {0, 0, _labGetWindowWidth(), _labGetWindowHeight()};
 
   // create window
   s_globals.hwnd = _labCreateWindow();
@@ -742,15 +770,18 @@ static void _labThreadCleanup(void)
   }
 }
 
-/**
- * @brief Initializes graphics.
- * 
- * Initializes structure lab_globals if it is not initialized yet.
- * Creates thread for message processing and runs it.
- *
- * @return LAB_TRUE if initialization was successful, otherwise return value is LAB_FALSE
- */
 labbool_t LabInit(void)
+{
+  labparams_t params;
+
+  params.width = 640;
+  params.height = 480;
+  params.scale = 1;
+
+  return LabInitWith(&params);
+}
+
+labbool_t LabInitWith(labparams_t const* params)
 {
   DWORD res;
   LPTHREAD_START_ROUTINE lpStartAddress = NULL;
@@ -760,8 +791,11 @@ labbool_t LabInit(void)
   if (s_globals.init)
     return LAB_FALSE;
 
-  s_globals.width = 640;
-  s_globals.height = 480;
+  LABASSERT((params->width > 0) && (params->height > 0));
+  LABASSERT(params->scale > 0);
+  s_globals.width = params->width;
+  s_globals.height = params->height;
+  s_globals.scale = params->scale;
 
   SetRectEmpty(&s_globals.updateRect);
 
@@ -852,6 +886,10 @@ int LabGetWidth(void)
   return s_globals.width;
 }
 
+static __inline int _labGetWindowWidth(void)
+{
+  return s_globals.width * s_globals.scale;
+}
 
 /**
  * @brief Gets window height.
@@ -864,6 +902,11 @@ int LabGetHeight(void)
 {
   LABASSERT_INIT();
   return s_globals.height;
+}
+
+static __inline int _labGetWindowHeight(void)
+{
+  return s_globals.height * s_globals.scale;
 }
 
 /**
@@ -886,10 +929,9 @@ void LabClear()
 void LabClearWith(labcolor_t color)
 {
   HBRUSH colorBrush = CreateSolidBrush(s_globals.colors[color]); // todo: why not SetDCBrushColor()? [4/3/2015 paul.smirnov]
-  RECT screenRect;
+  RECT screenRect = {0, 0, _labGetWindowWidth(), _labGetWindowHeight()};
 
   LABASSERT_INIT();
-  SetRect(&screenRect, 0, 0, LabGetWidth(), LabGetHeight());
 
   EnterCriticalSection(&s_globals.cs);
   {

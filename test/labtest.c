@@ -46,11 +46,12 @@ void DrawCircle(double angle, int radius, int color)
 void RunPoly(void)
 {
 	double angle = 0.0;
+	int radius = LabGetHeight() / 4;
 	while (!LabInputKeyReady())
 	{
 		LabClear();
 		angle += 0.0001;
-		DrawCircle(angle, 100, LABCOLOR_GREEN);
+		DrawCircle(angle, radius, LABCOLOR_GREEN);
 //		LabDelay(20);
 		LabDrawFlush();
 	}
@@ -82,8 +83,8 @@ int main(void)
 {
 	if (LabInit())
 	{
-		// RunPoly();
-		RunTruecolor();
+		RunPoly();
+		// RunTruecolor();
 		LabTerm();
 	}
 }
