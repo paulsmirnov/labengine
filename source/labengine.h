@@ -1,5 +1,79 @@
 #ifndef LABENGINE_H_INCLUDED
 #define LABENGINE_H_INCLUDED
+#pragma once
+
+/**
+ * @mainpage Introduction
+ 
+LabEngine представляет собой простейшую графическую библиотеку для проведения
+лабораторных работ в рамках консольных приложений для Windows. Она позволяет
+на первых порах, не вдаваясь в организацию оконных приложений и правила борьбы
+с WinAPI, делать несложные лабораторные с применением графики.
+
+Минимальная программа с использованием библиотеки выглядит следующим образом:
+
+@code{.c}
+#include "labengine.h"
+
+int main(void)
+{
+  if (LabInit())    // Инициализация
+  {
+    // ...          // Здесь можно что-то сделать
+
+    LabTerm();      // Завершение работы
+  }
+  return 0;
+}
+@endcode
+
+Эта программа инициализирует библиотеку и, в случае успеха, сразу же завершает
+работу программы. Можно успеть заметить, как открывается окно для рисования, но
+тут же закрывается.
+
+Более осмысленная версия программы выглядит так:
+
+@code
+#include "labengine.h"
+
+int main(void)
+{
+  // Инициализировать библиотеку
+  if (LabInit())
+  {
+    // Узнать размеры окна
+    int width = LabGetWidth();
+    int height = LabGetHeight();
+  
+    // Нарисовать красный прямоугольник
+    LabSetColor(LABCOLOR_RED);
+    LabDrawRectangle(0, 0, width, height);
+    
+    // Нарисовать зелёный крест
+    LabSetColor(LABCOLOR_GREEN);
+    LabDrawLine(1, 1, width - 1, height - 1);
+    LabDrawLine(1, height - 2, width - 1, 0);
+
+    // Отобразить картинку в окне
+    LabDrawFlush();
+
+    // Подождать нажатия клавиши и закончить работу
+    LabInputKey();
+    LabTerm();
+  }
+  return 0;
+}
+@endcode
+
+Обратите внимание на координаты (ноль --- в левом верхнем углу). По принятому
+в Windows соглашению конечные точки линий и прямоугольников не рисуются (линии
+не доходят до указанных координат).
+
+Результат выполнения программы:
+
+@image html basics.png
+
+*/
 
 #pragma comment(lib, "kernel32")
 #pragma comment(lib, "user32")
@@ -52,7 +126,7 @@ typedef enum labbool_t
  * @defgroup lifecycle_group Lifecycle Methods
  *
  * Функции инициализации графического режима и окончания работы в нём.
- * Подробнее о группе: @ref lifecycle_group
+ *
  * @{
  */
 
