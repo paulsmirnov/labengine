@@ -5,6 +5,32 @@
 #pragma comment(lib, "user32")
 #pragma comment(lib, "gdi32")
 
+#if defined(_DEBUG) || !defined(NDEBUG)
+#define LABENGINE_LIB_SUFFIX "-dbg"
+#else
+#define LABENGINE_LIB_SUFFIX
+#endif
+
+#ifdef _MSC_VER
+#if   _MSC_VER >= 1900 // Visual Studio 2015
+#pragma comment(lib, "labengine-vs15" LABENGINE_LIB_SUFFIX)
+#elif _MSC_VER >= 1800 // Visual Studio 2013
+#pragma comment(lib, "labengine-vs13" LABENGINE_LIB_SUFFIX)
+#elif _MSC_VER >= 1700 // Visual Studio 2012
+#pragma comment(lib, "labengine-vs12" LABENGINE_LIB_SUFFIX)
+#elif _MSC_VER >= 1600 // Visual Studio 2010
+#pragma comment(lib, "labengine-vs10" LABENGINE_LIB_SUFFIX)
+#elif _MSC_VER >= 1500 // Visual Studio 2008
+#pragma comment(lib, "labengine-vs08" LABENGINE_LIB_SUFFIX)
+#else
+#error This Visual Studio version is not supported.
+#endif
+#else
+#error This compiler is not supported.
+#endif
+
+#undef LABENGINE_LIB_SUFFIX
+
 #ifdef __cplusplus
 extern "C" {
 #endif
