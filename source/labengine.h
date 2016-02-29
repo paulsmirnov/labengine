@@ -49,6 +49,14 @@ typedef enum labbool_t
 } labbool_t;
 
 /**
+ * @defgroup lifecycle_group Lifecycle Methods
+ *
+ * Функции инициализации графического режима и окончания работы в нём.
+ * Подробнее о группе: @ref lifecycle_group
+ * @{
+ */
+
+/**
  * Параметры инициализации библиотеки.
  *
  * Используются при вызове функции LabInitWith(). При вызове LabInit()
@@ -60,14 +68,6 @@ typedef struct labparams_t
   unsigned height; ///< высота буфера для рисования
   unsigned scale;  ///< коэффициент масштабирования буфера при выводе на экран
 } labparams_t;
-
-/**
- * @defgroup lifecycle_group Lifecycle Methods
- *
- * Функции инициализации графического режима и окончания работы в нём.
- * Подробнее о группе: @ref lifecycle_group
- * @{
- */
 
 /**
  * @brief Инициализировать библиотеку.
@@ -194,7 +194,7 @@ void LabClear();
  */
 void LabClearWith(labcolor_t color);
 
-/** 
+/**
  * @brief Установить текущий цвет.
  *
  * Позволяет задать один из цветов стандартной палитры в качестве текущего,
@@ -349,7 +349,7 @@ typedef enum labkey_t
  
 } labkey_t;
 
-/** 
+/**
  * @brief Ожидать нажатия клавиши и узнать её код.
  * 
  * Ожидает нажатия клавиши, а затем, когда клавиша нажата, возвращает её код -
@@ -361,7 +361,7 @@ typedef enum labkey_t
  */
 labkey_t LabInputKey(void);
 
-/** 
+/**
  * Проверить наличие необработанных нажатий клавиш.
  *
  * @return @ref LAB_TRUE если есть необработанные нажатия клавиш, @ref LAB_FALSE, если таких нет.
